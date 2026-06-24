@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import pg from "pg";
+const { Pool } = pg;
 
 export interface User {
   id: string;
@@ -78,6 +80,23 @@ export interface SubscriptionPlan {
   is_active: boolean;
 }
 
+export interface BackupSnapshot {
+  id: string;
+  name: string;
+  timestamp: string;
+  sizeBytes: number;
+  data?: string;
+}
+
+export interface BackupSettings {
+  enabled: boolean;
+  cloudUrl: string;
+  intervalHours: number;
+  lastBackupAt?: string;
+  lastBackupStatus?: "success" | "failed" | "pending";
+  lastBackupMessage?: string;
+}
+
 export interface DatabaseSchema {
   users: User[];
   monitors: Monitor[];
@@ -86,6 +105,8 @@ export interface DatabaseSchema {
   payments: Payment[];
   systemLogs: SystemLog[];
   plans: SubscriptionPlan[];
+  backupSettings?: BackupSettings;
+  backupSnapshots?: BackupSnapshot[];
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "uptime_db.json");
@@ -278,35 +299,172 @@ function ensureDbExists() {
     const initialData = {
       ...INITIAL_DB,
       logs: mockLogs,
+      backupSettings: {
+        enabled: false,
+        cloudUrl: "",
+        intervalHours: 24
+      },
+      backupSnapshots: []
     };
 
     fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
   }
 }
 
-export function readDb(): DatabaseSchema {
-  ensureDbExists();
-  const data = fs.readFileSync(DB_PATH, "utf8");
-  try {
-    const parsed = JSON.parse(data);
-    let changed = false;
-    if (!parsed.plans) {
-      parsed.plans = DEFAULT_PLANS;
-      changed = true;
+let dbCache: DatabaseSchema | null = null;
+let pgPool: pg.Pool | null = null;
+
+export function getPgPool(): pg.Pool | null {
+  if (!pgPool && process.env.DATABASE_URL) {
+    try {
+      pgPool = new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_URL.includes("sslmode=") ? undefined : { rejectUnauthorized: false }
+      });
+      console.log("[PostgreSQL] Pool initialized.");
+    } catch (err) {
+      console.error("[PostgreSQL] Failed to initialize Pool:", err);
     }
-    if (changed) {
-      fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
-    }
-    return parsed;
-  } catch (err) {
-    console.error("Failed to parse DB, resetting to initial DB", err);
-    return INITIAL_DB;
   }
+  return pgPool;
+}
+
+export async function initializeDb(): Promise<DatabaseSchema> {
+  const pool = getPgPool();
+  if (pool) {
+    try {
+      console.log("[PostgreSQL] Checking schema tables...");
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS uptime_state (
+          key VARCHAR(50) PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      const res = await pool.query("SELECT value FROM uptime_state WHERE key = 'state'");
+      if (res.rows.length > 0) {
+        console.log("[PostgreSQL] Loaded existing state from DB.");
+        const parsed = JSON.parse(res.rows[0].value);
+        
+        let changed = false;
+        if (!parsed.plans) {
+          parsed.plans = DEFAULT_PLANS;
+          changed = true;
+        }
+        if (!parsed.backupSettings) {
+          parsed.backupSettings = {
+            enabled: false,
+            cloudUrl: "",
+            intervalHours: 24
+          };
+          changed = true;
+        }
+        if (!parsed.backupSnapshots) {
+          parsed.backupSnapshots = [];
+          changed = true;
+        }
+        
+        dbCache = parsed;
+        if (changed) {
+          await pool.query(
+            "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            [JSON.stringify(dbCache)]
+          );
+        }
+      } else {
+        console.log("[PostgreSQL] No state found. Initializing with local JSON data...");
+        ensureDbExists();
+        const localData = fs.readFileSync(DB_PATH, "utf8");
+        const parsed = JSON.parse(localData);
+        if (!parsed.backupSettings) {
+          parsed.backupSettings = {
+            enabled: false,
+            cloudUrl: "",
+            intervalHours: 24
+          };
+        }
+        if (!parsed.backupSnapshots) {
+          parsed.backupSnapshots = [];
+        }
+        dbCache = parsed;
+        await pool.query(
+          "INSERT INTO uptime_state (key, value) VALUES ('state', $1)",
+          [JSON.stringify(dbCache)]
+        );
+        console.log("[PostgreSQL] Seeded initial state in database.");
+      }
+    } catch (err) {
+      console.error("[PostgreSQL] Error during schema initialization, falling back to local file:", err);
+    }
+  }
+
+  if (!dbCache) {
+    ensureDbExists();
+    const data = fs.readFileSync(DB_PATH, "utf8");
+    try {
+      const parsed = JSON.parse(data);
+      let changed = false;
+      if (!parsed.plans) {
+        parsed.plans = DEFAULT_PLANS;
+        changed = true;
+      }
+      if (!parsed.backupSettings) {
+        parsed.backupSettings = {
+          enabled: false,
+          cloudUrl: "",
+          intervalHours: 24
+        };
+        changed = true;
+      }
+      if (!parsed.backupSnapshots) {
+        parsed.backupSnapshots = [];
+        changed = true;
+      }
+      if (changed) {
+        fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
+      }
+      dbCache = parsed;
+    } catch (err) {
+      console.error("Failed to parse DB, resetting to initial DB", err);
+      dbCache = INITIAL_DB;
+    }
+  }
+
+  return dbCache;
+}
+
+export function readDb(): DatabaseSchema {
+  if (!dbCache) {
+    ensureDbExists();
+    try {
+      dbCache = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+    } catch {
+      dbCache = INITIAL_DB;
+    }
+  }
+  return dbCache!;
 }
 
 export function writeDb(db: DatabaseSchema) {
-  ensureDbExists();
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
+  dbCache = db;
+  
+  const pool = getPgPool();
+  if (pool) {
+    pool.query(
+      "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP",
+      [JSON.stringify(db)]
+    ).catch(err => {
+      console.error("[PostgreSQL] Background save failed:", err);
+    });
+  }
+  
+  try {
+    ensureDbExists();
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
+  } catch (err) {
+    console.error("Local file write failed:", err);
+  }
 }
 
 // Log helper
@@ -319,7 +477,6 @@ export function addSystemLog(level: "info" | "warn" | "error", message: string) 
     timestamp: new Date().toISOString(),
   };
   db.systemLogs.unshift(newLog);
-  // Cap at 100 logs
   if (db.systemLogs.length > 100) {
     db.systemLogs = db.systemLogs.slice(0, 100);
   }

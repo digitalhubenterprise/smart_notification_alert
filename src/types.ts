@@ -77,3 +77,32 @@ export interface SubscriptionPlan {
   features: string[];
   is_active: boolean;
 }
+
+export interface BackupSnapshot {
+  id: string;
+  name: string;
+  timestamp: string;
+  sizeBytes: number;
+  data?: string;
+}
+
+export interface BackupSettings {
+  enabled: boolean;
+  cloudUrl: string;
+  intervalHours: number;
+  lastBackupAt?: string;
+  lastBackupStatus?: "success" | "failed" | "pending";
+  lastBackupMessage?: string;
+}
+
+export interface DatabaseSchema {
+  users: User[];
+  monitors: Monitor[];
+  logs: MonitorLog[];
+  config: AlertConfig;
+  payments: Payment[];
+  systemLogs: SystemLog[];
+  plans: SubscriptionPlan[];
+  backupSettings?: BackupSettings;
+  backupSnapshots?: BackupSnapshot[];
+}

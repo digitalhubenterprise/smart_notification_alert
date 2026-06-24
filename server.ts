@@ -3,7 +3,7 @@ import path from "path";
 import dns from "dns";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
-import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment } from "./server/db.js";
+import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
 
@@ -30,6 +30,9 @@ async function startServer() {
 
   // JSON parsing middleware
   app.use(express.json());
+
+  // Initialize DB first
+  await initializeDb();
 
   // 1. Initialize Uptime Monitoring Background Engine
   startMonitorEngine();
@@ -877,6 +880,229 @@ async function startServer() {
       ];
       writeDb(db);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 1. Get Backup settings & snapshots
+  app.get("/api/admin/backup/settings", (req, res) => {
+    try {
+      const db = readDb();
+      res.json({
+        backupSettings: db.backupSettings || { enabled: false, cloudUrl: "", intervalHours: 24 },
+        backupSnapshots: (db.backupSnapshots || []).map(s => ({
+          id: s.id,
+          name: s.name,
+          timestamp: s.timestamp,
+          sizeBytes: s.sizeBytes
+        }))
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 2. Update Backup settings
+  app.post("/api/admin/backup/settings", (req, res) => {
+    try {
+      const { enabled, cloudUrl, intervalHours } = req.body;
+      const db = readDb();
+      db.backupSettings = {
+        enabled: Boolean(enabled),
+        cloudUrl: String(cloudUrl || ""),
+        intervalHours: Number(intervalHours || 24),
+        lastBackupAt: db.backupSettings?.lastBackupAt,
+        lastBackupStatus: db.backupSettings?.lastBackupStatus,
+        lastBackupMessage: db.backupSettings?.lastBackupMessage
+      };
+      writeDb(db);
+      addSystemLog("info", `Backup configurations updated by administrator. Cloud Backup Server: ${cloudUrl || 'None'}`);
+      res.json({ success: true, backupSettings: db.backupSettings });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 3. Create Manual Backup snapshot
+  app.post("/api/admin/backup/create", async (req, res) => {
+    try {
+      const { name } = req.body;
+      const db = readDb();
+      const backupName = name ? String(name) : `Backup_${new Date().toISOString().replace(/[:.]/g, "-")}`;
+      
+      const dbString = JSON.stringify(db);
+      const sizeBytes = Buffer.byteLength(dbString, "utf8");
+      
+      const newSnapshot = {
+        id: `backup-${Date.now()}`,
+        name: backupName,
+        timestamp: new Date().toISOString(),
+        sizeBytes,
+        data: dbString
+      };
+      
+      if (!db.backupSnapshots) {
+        db.backupSnapshots = [];
+      }
+      db.backupSnapshots.unshift(newSnapshot);
+      
+      let uploadStatus = "not_configured";
+      let uploadMessage = "";
+      
+      if (db.backupSettings?.enabled && db.backupSettings?.cloudUrl) {
+        try {
+          const cloudRes = await fetch(db.backupSettings.cloudUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              appName: "UptimePro",
+              timestamp: new Date().toISOString(),
+              backupName: backupName,
+              data: db
+            })
+          });
+          
+          if (cloudRes.ok) {
+            uploadStatus = "success";
+            uploadMessage = "Cloud backup dispatched and accepted successfully.";
+            db.backupSettings.lastBackupStatus = "success";
+            db.backupSettings.lastBackupMessage = uploadMessage;
+          } else {
+            uploadStatus = "failed";
+            uploadMessage = `Cloud backup failed with status code ${cloudRes.status}.`;
+            db.backupSettings.lastBackupStatus = "failed";
+            db.backupSettings.lastBackupMessage = uploadMessage;
+          }
+        } catch (fetchErr: any) {
+          uploadStatus = "failed";
+          uploadMessage = `Cloud backup request failed: ${fetchErr.message}`;
+          db.backupSettings.lastBackupStatus = "failed";
+          db.backupSettings.lastBackupMessage = uploadMessage;
+        }
+        db.backupSettings.lastBackupAt = new Date().toISOString();
+      }
+      
+      writeDb(db);
+      addSystemLog("info", `Manual backup snapshot "${backupName}" created successfully. Cloud upload status: ${uploadStatus}`);
+      
+      res.json({
+        success: true,
+        snapshot: {
+          id: newSnapshot.id,
+          name: newSnapshot.name,
+          timestamp: newSnapshot.timestamp,
+          sizeBytes: newSnapshot.sizeBytes
+        },
+        cloudUpload: {
+          status: uploadStatus,
+          message: uploadMessage
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 4. Restore database from snapshot ID
+  app.post("/api/admin/backup/restore", (req, res) => {
+    try {
+      const { id } = req.body;
+      if (!id) {
+        res.status(400).json({ error: "Backup snapshot ID is required." });
+        return;
+      }
+      
+      const db = readDb();
+      const matched = (db.backupSnapshots || []).find(s => s.id === id);
+      if (!matched || !matched.data) {
+        res.status(404).json({ error: "Backup snapshot not found or has no content data." });
+        return;
+      }
+      
+      const restoredState = JSON.parse(matched.data);
+      
+      const currentBackupSettings = db.backupSettings;
+      const currentBackupSnapshots = db.backupSnapshots;
+      
+      restoredState.backupSettings = currentBackupSettings;
+      restoredState.backupSnapshots = currentBackupSnapshots;
+      
+      writeDb(restoredState);
+      addSystemLog("info", `System restored to snapshot: "${matched.name}"`);
+      res.json({ success: true, message: `System state restored to "${matched.name}" successfully.` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 5. Test Cloud Backup
+  app.post("/api/admin/backup/test-cloud", async (req, res) => {
+    try {
+      const db = readDb();
+      const cloudUrl = db.backupSettings?.cloudUrl;
+      
+      if (!cloudUrl) {
+        res.status(400).json({ error: "No Cloud Backup Server URL is currently configured." });
+        return;
+      }
+      
+      addSystemLog("info", `Initiating manual test backup upload to cloud destination: ${cloudUrl}`);
+      
+      let uploadStatus: "success" | "failed" = "success";
+      let uploadMessage = "Cloud test backup accepted successfully.";
+      
+      try {
+        const cloudRes = await fetch(cloudUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            appName: "UptimePro",
+            test: true,
+            timestamp: new Date().toISOString(),
+            data: db
+          })
+        });
+        
+        if (!cloudRes.ok) {
+          uploadStatus = "failed";
+          uploadMessage = `Cloud test failed with HTTP status code ${cloudRes.status}.`;
+        }
+      } catch (fetchErr: any) {
+        uploadStatus = "failed";
+        uploadMessage = `Cloud test transfer failed: ${fetchErr.message}`;
+      }
+      
+      if (!db.backupSettings) {
+        db.backupSettings = { enabled: false, cloudUrl: "", intervalHours: 24 };
+      }
+      db.backupSettings.lastBackupStatus = uploadStatus;
+      db.backupSettings.lastBackupMessage = uploadMessage;
+      db.backupSettings.lastBackupAt = new Date().toISOString();
+      writeDb(db);
+      
+      if (uploadStatus === "success") {
+        addSystemLog("info", `Cloud backup test passed.`);
+        res.json({ success: true, message: uploadMessage });
+      } else {
+        addSystemLog("error", `Cloud backup test failed: ${uploadMessage}`);
+        res.status(502).json({ error: uploadMessage });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 6. Delete backup snapshot
+  app.delete("/api/admin/backup/delete/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const db = readDb();
+      const initialCount = db.backupSnapshots?.length || 0;
+      db.backupSnapshots = (db.backupSnapshots || []).filter(s => s.id !== id);
+      writeDb(db);
+      addSystemLog("info", `Deleted backup snapshot ${id}`);
+      res.json({ success: true, deleted: initialCount - db.backupSnapshots.length > 0 });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

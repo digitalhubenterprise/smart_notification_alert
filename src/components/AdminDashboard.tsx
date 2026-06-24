@@ -23,7 +23,11 @@ import {
   Sparkles,
   ToggleLeft,
   X,
-  Plus
+  Plus,
+  Cloud,
+  Database,
+  UploadCloud,
+  Download
 } from "lucide-react";
 import { User, AlertConfig, SystemLog, SubscriptionPlan } from "../types.ts";
 
@@ -31,7 +35,7 @@ interface AdminDashboardProps {
   users: User[];
   config: AlertConfig | null;
   onRefreshData: () => void;
-  activeTab?: "settings" | "subscribers" | "logs" | "plans";
+  activeTab?: "settings" | "subscribers" | "logs" | "plans" | "backups";
   plans?: SubscriptionPlan[];
 }
 
@@ -42,6 +46,23 @@ export default function AdminDashboard({
   activeTab = "settings",
   plans = []
 }: AdminDashboardProps) {
+  // Backups tab state
+  const [backupSettings, setBackupSettings] = useState<{
+    enabled: boolean;
+    cloudUrl: string;
+    intervalHours: number;
+    lastBackupAt?: string;
+    lastBackupStatus?: "success" | "failed" | "pending";
+    lastBackupMessage?: string;
+  }>({ enabled: false, cloudUrl: "", intervalHours: 24 });
+  const [backupSnapshots, setBackupSnapshots] = useState<any[]>([]);
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+  const [isSavingBackupSettings, setIsSavingBackupSettings] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [isTestingCloud, setIsTestingCloud] = useState(false);
+  const [newBackupName, setNewBackupName] = useState("");
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
   // System Log cache state
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
@@ -131,6 +152,155 @@ export default function AdminDashboard({
     const interval = setInterval(fetchSystemLogs, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch Backups settings & snapshots
+  const fetchBackupSettings = async () => {
+    setIsLoadingBackups(true);
+    try {
+      const res = await fetch("/api/admin/backup/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setBackupSettings(data.backupSettings);
+        setBackupSnapshots(data.backupSnapshots);
+      }
+    } catch (err) {
+      console.error("Failed to fetch backups:", err);
+    } finally {
+      setIsLoadingBackups(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "backups") {
+      fetchBackupSettings();
+    }
+  }, [activeTab]);
+
+  const handleSaveBackupSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessMsg("");
+    setErrorMsg("");
+    setIsSavingBackupSettings(true);
+    try {
+      const res = await fetch("/api/admin/backup/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(backupSettings)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBackupSettings(data.backupSettings);
+        setSuccessMsg("Backup settings saved successfully.");
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "Failed to save backup settings.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Network error occurred.");
+    } finally {
+      setIsSavingBackupSettings(false);
+    }
+  };
+
+  const handleCreateManualBackup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessMsg("");
+    setErrorMsg("");
+    setIsCreatingBackup(true);
+    try {
+      const res = await fetch("/api/admin/backup/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newBackupName })
+      });
+      if (res.ok) {
+        setSuccessMsg(`Backup snapshot created successfully!`);
+        setNewBackupName("");
+        fetchBackupSettings();
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "Failed to create manual backup.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Network error occurred.");
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  };
+
+  const handleTestCloudBackup = async () => {
+    setSuccessMsg("");
+    setErrorMsg("");
+    setIsTestingCloud(true);
+    try {
+      const res = await fetch("/api/admin/backup/test-cloud", {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuccessMsg(data.message || "Cloud connection test passed! Backup data uploaded successfully.");
+        fetchBackupSettings();
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "Cloud upload failed. Please verify the backup server URL.");
+        fetchBackupSettings();
+      }
+    } catch (err: any) {
+      setErrorMsg(`Cloud endpoint error: ${err.message}`);
+      fetchBackupSettings();
+    } finally {
+      setIsTestingCloud(false);
+    }
+  };
+
+  const handleRestoreBackup = async (id: string, name: string) => {
+    if (!window.confirm(`Are you absolutely sure you want to restore the system to "${name}"?\nThis will revert all current data to this snapshot!`)) {
+      return;
+    }
+    setSuccessMsg("");
+    setErrorMsg("");
+    setRestoringId(id);
+    try {
+      const res = await fetch("/api/admin/backup/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setSuccessMsg(`System restored successfully to "${name}"!`);
+        onRefreshData();
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "Failed to restore backup snapshot.");
+      }
+    } catch (err: any) {
+      setErrorMsg(`Restore error: ${err.message}`);
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const handleDeleteBackup = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this backup snapshot? This cannot be undone.")) {
+      return;
+    }
+    setSuccessMsg("");
+    setErrorMsg("");
+    try {
+      const res = await fetch(`/api/admin/backup/delete/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setSuccessMsg("Backup snapshot deleted successfully.");
+        fetchBackupSettings();
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "Failed to delete backup snapshot.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    }
+  };
 
   const fetchSystemLogs = async () => {
     try {
@@ -1042,6 +1212,270 @@ export default function AdminDashboard({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 5. CLOUD & DATABASE BACKUPS ==================== */}
+      {activeTab === "backups" && (
+        <div className="space-y-6">
+          {/* Status Bar / Feedback message */}
+          {(successMsg || errorMsg) && (
+            <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center gap-3 animate-fade-in ${
+              successMsg 
+                ? "bg-emerald-50 border-emerald-100 text-emerald-800" 
+                : "bg-rose-50 border-rose-100 text-rose-800"
+            }`}>
+              <AlertTriangle className={`w-4 h-4 shrink-0 ${successMsg ? "text-emerald-500" : "text-rose-500"}`} />
+              <div className="flex-1">{successMsg || errorMsg}</div>
+              <button type="button" onClick={() => { setSuccessMsg(""); setErrorMsg(""); }} className="text-slate-400 hover:text-slate-600 font-bold">×</button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Left Column: Cloud Server Backup Configuration */}
+            <div className="lg:col-span-5 bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                  <Cloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">Cloud Auto Backup Server</h3>
+                  <p className="text-[10px] text-slate-400 font-medium">Automatic cloud destination scheduler & endpoint test</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveBackupSettings} className="space-y-5">
+                {/* Enabled Toggle */}
+                <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                  <div>
+                    <span className="block font-bold text-slate-700 text-xs">Auto Cloud Backup</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Dispatch backup payload automatically</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBackupSettings({ ...backupSettings, enabled: !backupSettings.enabled })}
+                    className="cursor-pointer"
+                  >
+                    {backupSettings.enabled ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-xl border border-indigo-100">
+                        <Check className="w-3 h-3" /> Enabled
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-xl border border-slate-200">
+                        Disabled
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Backup Server URL Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
+                    Cloud Backup Server URL
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      placeholder="https://your-cloud-backup-endpoint.com/api/backup"
+                      value={backupSettings.cloudUrl}
+                      onChange={(e) => setBackupSettings({ ...backupSettings, cloudUrl: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-mono"
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-400 leading-relaxed font-medium">
+                    The platform sends a secure POST request with the full system state JSON payload to this server.
+                  </p>
+                </div>
+
+                {/* Interval Hours Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
+                    Backup Interval (Hours)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={backupSettings.intervalHours}
+                    onChange={(e) => setBackupSettings({ ...backupSettings, intervalHours: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+
+                {/* Last Cloud Dispatch Status Block */}
+                <div className="p-4 bg-slate-900 text-slate-300 rounded-2xl border border-slate-800 space-y-2 font-mono">
+                  <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-800/60 pb-1.5">
+                    <span>Cloud Sync Status</span>
+                    <span className="text-[8px]">Active Destination</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] leading-relaxed">
+                    <div>
+                      <span className="text-slate-500 block text-[9px]">Last Backup At:</span>
+                      <span className="font-bold text-slate-200">
+                        {backupSettings.lastBackupAt ? new Date(backupSettings.lastBackupAt).toLocaleString() : "Never"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px]">Status Code:</span>
+                      {backupSettings.lastBackupStatus ? (
+                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase border ${
+                          backupSettings.lastBackupStatus === "success" 
+                            ? "bg-emerald-950/80 border-emerald-900 text-emerald-400" 
+                            : "bg-rose-950/80 border-rose-900 text-rose-400"
+                        }`}>
+                          {backupSettings.lastBackupStatus}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-bold">No Records</span>
+                      )}
+                    </div>
+                  </div>
+                  {backupSettings.lastBackupMessage && (
+                    <div className="text-[9px] text-slate-400 border-t border-slate-800/40 pt-2 break-all leading-normal">
+                      <span className="text-slate-500 block uppercase font-bold text-[8px] tracking-wider">Sync Log:</span>
+                      {backupSettings.lastBackupMessage}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSavingBackupSettings}
+                    className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm text-center"
+                  >
+                    {isSavingBackupSettings ? "Saving Settings..." : "Save Backup Settings"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTestCloudBackup}
+                    disabled={isTestingCloud || !backupSettings.cloudUrl}
+                    className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-50 disabled:hover:bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5"
+                    title="Test secure backup transmission to URL immediately"
+                  >
+                    {isTestingCloud ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <UploadCloud className="w-3.5 h-3.5" />
+                    )}
+                    <span>Test Cloud Backup</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Right Column: Database State Snapshots Manager */}
+            <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-sm space-y-6 flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-50 pb-4 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-slate-50 text-slate-600 rounded-2xl">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">System Database Snapshots</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Reversible self-contained database snapshots</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50/50 rounded-xl border border-indigo-50 text-indigo-600 font-mono text-[10px] font-bold">
+                  <span className="text-indigo-400">Engine:</span>
+                  <span>PostgreSQL (Active)</span>
+                </div>
+              </div>
+
+              {/* Create manual snapshot inline form */}
+              <form onSubmit={handleCreateManualBackup} className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50 flex flex-col sm:flex-row gap-3 shrink-0">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g., Before updating premium pricing plans..."
+                    value={newBackupName}
+                    onChange={(e) => setNewBackupName(e.target.value)}
+                    className="w-full h-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isCreatingBackup}
+                  className="sm:w-auto h-10 px-5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-md shadow-indigo-500/10 flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  {isCreatingBackup ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  <span>Create System Snapshot</span>
+                </button>
+              </form>
+
+              {/* Snapshots List */}
+              <div className="flex-1 overflow-y-auto max-h-[380px] pr-1 space-y-3 scrollbar-thin">
+                {isLoadingBackups ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <span className="text-xs text-slate-400 font-medium">Loading snapshots...</span>
+                  </div>
+                ) : backupSnapshots.length === 0 ? (
+                  <div className="text-center py-20 border-2 border-dashed border-slate-100 rounded-2xl">
+                    <p className="text-xs text-slate-400 font-medium">No snapshots available. Create your first snapshot above!</p>
+                  </div>
+                ) : (
+                  backupSnapshots.map((snapshot) => (
+                    <div key={snapshot.id} className="p-4 bg-white hover:bg-slate-50/50 border border-slate-100 rounded-2xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <span className="block font-bold text-slate-800 text-xs">{snapshot.name}</span>
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-slate-400 font-mono">
+                          <span className="font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">ID: {snapshot.id}</span>
+                          <span>|</span>
+                          <span>Timestamp: {new Date(snapshot.timestamp).toLocaleString()}</span>
+                          <span>|</span>
+                          <span className="font-semibold text-slate-500">Size: {(snapshot.sizeBytes / 1024).toFixed(2)} KB</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRestoreBackup(snapshot.id, snapshot.name)}
+                          disabled={restoringId !== null}
+                          className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 text-indigo-600 border border-indigo-100 text-[10px] rounded-xl font-black transition-all cursor-pointer flex items-center gap-1.5"
+                          title="Restore complete database and system states to this snapshot"
+                        >
+                          {restoringId === snapshot.id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Download className="w-3 h-3" />
+                          )}
+                          <span>Restore</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBackup(snapshot.id)}
+                          className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl transition-all cursor-pointer"
+                          title="Permanently delete this backup snapshot"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Informational Warning Block */}
+              <div className="p-3 bg-amber-50/50 border border-amber-100/50 rounded-2xl text-[10px] text-amber-800 leading-normal font-medium shrink-0 flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  <strong>CRITICAL WARNING:</strong> Restoring a system snapshot overwrites all monitor states, subscriber profiles, transaction balances, and billing logs with the historical state. Use this power with extreme care.
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

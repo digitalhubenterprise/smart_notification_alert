@@ -24,7 +24,8 @@ import {
   Lock,
   Mail,
   Smartphone,
-  Key
+  Key,
+  Database
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SubscriberDashboard from "./components/SubscriberDashboard.tsx";
@@ -68,7 +69,7 @@ export default function App() {
 
   // Sub-tab Navigation States (persists selected sub-tabs when switching views)
   const [subscriberTab, setSubscriberTab] = useState<"monitors" | "wallet" | "billing" | "history" | "settings">("monitors");
-  const [adminTab, setAdminTab] = useState<"settings" | "subscribers" | "logs" | "plans">("settings");
+  const [adminTab, setAdminTab] = useState<"settings" | "subscribers" | "logs" | "plans" | "backups">("settings");
 
   // Mobile Sidebar Slide-Out Toggle State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -456,6 +457,21 @@ export default function App() {
               >
                 <CreditCard className={`w-4 h-4 ${adminTab === "plans" ? "text-indigo-500" : ""}`} />
                 <span>Subscription Plans</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setAdminTab("backups");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-all cursor-pointer ${
+                  adminTab === "backups"
+                    ? "bg-slate-850 text-white border-l-4 border-indigo-500 font-bold"
+                    : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+                }`}
+              >
+                <Database className={`w-4 h-4 ${adminTab === "backups" ? "text-indigo-500" : ""}`} />
+                <span>Cloud & DB Backups</span>
               </button>
             </div>
           )}
@@ -1040,7 +1056,7 @@ export default function App() {
                 <span className="font-bold text-slate-800 text-sm block leading-none capitalize">
                   {activeRole === "subscriber" 
                     ? (subscriberTab === "monitors" ? "Monitors & Latency metrics" : subscriberTab === "wallet" ? "Secure Wallet & Deposits" : subscriberTab === "billing" ? "Billing & blockchain deposits" : subscriberTab === "history" ? "Monitor execution logs & triggered alerts" : "Configure notification channels & preferences")
-                    : (adminTab === "settings" ? "Global Settings & Gateways" : adminTab === "subscribers" ? "Subscriber directory" : adminTab === "plans" ? "Manage Subscription Plans & Pricing" : "System concurrent logs")
+                    : (adminTab === "settings" ? "Global Settings & Gateways" : adminTab === "subscribers" ? "Subscriber directory" : adminTab === "plans" ? "Manage Subscription Plans & Pricing" : adminTab === "backups" ? "Database & Auto Cloud Backups" : "System concurrent logs")
                   }
                 </span>
               </div>
