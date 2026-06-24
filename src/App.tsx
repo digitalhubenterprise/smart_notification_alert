@@ -35,14 +35,22 @@ import { User, Monitor, Payment, AlertConfig, SubscriptionPlan } from "./types.t
 
 export default function App() {
   // Session Login Status
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("uptimepro_isLoggedIn") === "true";
+  });
 
   // Navigation State when not logged in ("landing", "login", "register", "forgot_password")
-  const [activePage, setActivePage] = useState<"landing" | "login" | "register" | "forgot_password">("landing");
+  const [activePage, setActivePage] = useState<"landing" | "login" | "register" | "forgot_password">(() => {
+    return (localStorage.getItem("uptimepro_activePage") as any) || "landing";
+  });
 
   // Login Input Credentials
-  const [loginEmail, setLoginEmail] = useState("subscriber@uptimepro.io");
-  const [loginPassword, setLoginPassword] = useState("password123");
+  const [loginEmail, setLoginEmail] = useState(() => {
+    return localStorage.getItem("uptimepro_loginEmail") || "subscriber@uptimepro.io";
+  });
+  const [loginPassword, setLoginPassword] = useState(() => {
+    return localStorage.getItem("uptimepro_loginPassword") || "password123";
+  });
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
@@ -65,11 +73,17 @@ export default function App() {
   const [simulatedOtp, setSimulatedOtp] = useState<string | null>(null);
 
   // Active Role State ("subscriber" or "admin")
-  const [activeRole, setActiveRole] = useState<"subscriber" | "admin">("subscriber");
+  const [activeRole, setActiveRole] = useState<"subscriber" | "admin">(() => {
+    return (localStorage.getItem("uptimepro_activeRole") as any) || "subscriber";
+  });
 
   // Sub-tab Navigation States (persists selected sub-tabs when switching views)
-  const [subscriberTab, setSubscriberTab] = useState<"monitors" | "wallet" | "billing" | "history" | "settings">("monitors");
-  const [adminTab, setAdminTab] = useState<"settings" | "subscribers" | "logs" | "plans" | "backups">("settings");
+  const [subscriberTab, setSubscriberTab] = useState<"monitors" | "wallet" | "billing" | "history" | "settings">(() => {
+    return (localStorage.getItem("uptimepro_subscriberTab") as any) || "monitors";
+  });
+  const [adminTab, setAdminTab] = useState<"settings" | "subscribers" | "logs" | "plans" | "backups">(() => {
+    return (localStorage.getItem("uptimepro_adminTab") as any) || "settings";
+  });
 
   // Mobile Sidebar Slide-Out Toggle State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -87,21 +101,51 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Persistent Storage Sync Effects
+  useEffect(() => {
+    localStorage.setItem("uptimepro_isLoggedIn", String(isLoggedIn));
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_activePage", activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_loginEmail", loginEmail);
+  }, [loginEmail]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_loginPassword", loginPassword);
+  }, [loginPassword]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_activeRole", activeRole);
+  }, [activeRole]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_subscriberTab", subscriberTab);
+  }, [subscriberTab]);
+
+  useEffect(() => {
+    localStorage.setItem("uptimepro_adminTab", adminTab);
+  }, [adminTab]);
+
   // Trigger global data refresh
-  const loadPlatformData = async (silent = false) => {
+  const loadPlatformData = async (silent = false, customEmail?: string) => {
     if (!silent) setIsRefreshing(true);
     try {
+      const activeEmail = customEmail || loginEmail || localStorage.getItem("uptimepro_loginEmail") || "subscriber@uptimepro.io";
       const headers: Record<string, string> = {
-        "x-user-email": loginEmail
+        "x-user-email": activeEmail
       };
       // Parallel fetches for speed and reliability
       const [userRes, monitorsRes, paymentsRes, configRes, allUsersRes, plansRes] = await Promise.all([
-        fetch(`/api/user?email=${encodeURIComponent(loginEmail)}`, { headers }),
-        fetch(`/api/monitors?email=${encodeURIComponent(loginEmail)}`, { headers }),
-        fetch(`/api/payment/history?email=${encodeURIComponent(loginEmail)}`, { headers }),
-        fetch(`/api/config?email=${encodeURIComponent(loginEmail)}`, { headers }),
-        fetch(`/api/admin/users?email=${encodeURIComponent(loginEmail)}`, { headers }),
-        fetch(`/api/plans?email=${encodeURIComponent(loginEmail)}`, { headers })
+        fetch(`/api/user?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        fetch(`/api/monitors?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        fetch(`/api/payment/history?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        fetch(`/api/config?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        fetch(`/api/admin/users?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        fetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, { headers })
       ]);
 
       if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !allUsersRes.ok || !plansRes.ok) {
@@ -118,7 +162,7 @@ export default function App() {
       ]);
 
       setUser(userData);
-      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || loginEmail.toLowerCase().includes("admin");
+      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || activeEmail.toLowerCase().includes("admin");
       setActiveRole(isLocalAdmin ? "admin" : "subscriber");
       setAllUsers(allUsersData);
       setMonitors(monitorsData);
@@ -135,9 +179,10 @@ export default function App() {
     }
   };
 
-  // On first mount, boot data
+  // On first mount, boot data using current email
   useEffect(() => {
-    loadPlatformData();
+    const activeEmail = localStorage.getItem("uptimepro_loginEmail") || loginEmail;
+    loadPlatformData(false, activeEmail);
   }, []);
 
   // Cryptographic Authentication Handlers
@@ -512,6 +557,13 @@ export default function App() {
             setActivePage("landing");
             setIsSidebarOpen(false);
             setActiveRole("subscriber");
+            setSubscriberTab("monitors");
+            setAdminTab("settings");
+            localStorage.removeItem("uptimepro_isLoggedIn");
+            localStorage.removeItem("uptimepro_activePage");
+            localStorage.removeItem("uptimepro_activeRole");
+            localStorage.removeItem("uptimepro_subscriberTab");
+            localStorage.removeItem("uptimepro_adminTab");
           }}
           className="w-full px-3 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-rose-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-rose-950 hover:border-rose-900/50"
         >

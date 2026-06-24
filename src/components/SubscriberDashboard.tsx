@@ -169,6 +169,14 @@ export default function SubscriberDashboard({
     setIsSavingSettings(true);
     setSettingsSuccess("");
     setSettingsError("");
+
+    // Validate BEP-20 wallet address format if provided
+    if (profileWallet && !/^0x[a-fA-F0-9]{40}$/.test(profileWallet)) {
+      setSettingsError("Please enter a valid BSC/BEP-20 40-character hex wallet address starting with 0x.");
+      setIsSavingSettings(false);
+      return;
+    }
+
     try {
       const userRes = await fetchWithAuth("/api/user", {
         method: "PUT",
@@ -1542,7 +1550,7 @@ export default function SubscriberDashboard({
           
           {/* Settings Top Card */}
           <div className="bg-slate-900 text-white rounded-3xl p-6 md:p-8 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-2xl" />
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-2xl pointer-events-none" />
             
             <div className="space-y-2 relative z-10">
               <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest">
@@ -1557,7 +1565,7 @@ export default function SubscriberDashboard({
             <button
               type="submit"
               disabled={isSavingSettings}
-              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="relative z-10 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Save className="w-4 h-4" />
               <span>{isSavingSettings ? "Saving Settings..." : "Save All Settings"}</span>
@@ -1597,7 +1605,7 @@ export default function SubscriberDashboard({
                     <input
                       type="text"
                       required
-                      value={profileName}
+                      value={profileName || ""}
                       onChange={(e) => setProfileName(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-800 font-medium"
                     />
@@ -1608,7 +1616,7 @@ export default function SubscriberDashboard({
                     <input
                       type="email"
                       required
-                      value={profileEmail}
+                      value={profileEmail || ""}
                       onChange={(e) => setProfileEmail(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-800 font-medium"
                     />
@@ -1627,9 +1635,7 @@ export default function SubscriberDashboard({
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">BEP-20 Wallet Address (Binance Smart Chain)</label>
                   <input
                     type="text"
-                    pattern="^0x[a-fA-F0-9]{40}$"
-                    title="Please enter a valid BSC/BEP-20 40-character hex wallet address starting with 0x"
-                    value={profileWallet}
+                    value={profileWallet || ""}
                     onChange={(e) => setProfileWallet(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-800 font-bold"
                   />
@@ -1703,7 +1709,7 @@ export default function SubscriberDashboard({
                     <input
                       type="text"
                       placeholder="e.g. 518491029"
-                      value={profileTelegramChatId}
+                      value={profileTelegramChatId || ""}
                       onChange={(e) => setProfileTelegramChatId(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-850 font-mono font-bold"
                     />
