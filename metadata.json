@@ -1,0 +1,6 @@
+{
+  "name": "UptimePro",
+  "description": "Smart Uptime Monitoring SaaS with BSC BEP-20 Payment Gateway, real-time metrics, and instant Telegram/Email alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
