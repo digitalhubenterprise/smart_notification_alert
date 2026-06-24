@@ -2,6 +2,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  password_hash?: string;
+  password_salt?: string;
   balance: number;
   wallet_address: string;
   plan_id: "free" | "pro" | "enterprise";

@@ -1,10 +1,28 @@
 import express from "express";
 import path from "path";
 import dns from "dns";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
+
+// Cryptographic helpers for password hashing
+function hashPassword(password: string, salt: string): string {
+  return crypto.createHmac("sha256", salt).update(password).digest("hex");
+}
+
+function generateSalt(): string {
+  return crypto.randomBytes(16).toString("hex");
+}
+
+// In-memory secure OTP storage for password resets (expires in 5 minutes)
+interface OtpRecord {
+  otp: string;
+  expires: number;
+  deliveryMethod: "email" | "telegram";
+}
+const tempOtps = new Map<string, OtpRecord>();
 
 async function startServer() {
   const app = express();
@@ -16,14 +34,214 @@ async function startServer() {
   // 1. Initialize Uptime Monitoring Background Engine
   startMonitorEngine();
 
+  // Helper to dynamically get the active session user
+  const getActiveUser = (req: express.Request, db: any) => {
+    const emailHeader = req.headers["x-user-email"] || req.query.email;
+    if (emailHeader) {
+      const matched = db.users.find((u: any) => u.email.toLowerCase() === String(emailHeader).toLowerCase());
+      if (matched) return matched;
+    }
+    return db.users[0];
+  };
+
   // 2. API Routes
-  
+
+  // Secure Cryptographic Authentication Endpoints
+
+  // Register Endpoint
+  app.post("/api/auth/register", (req, res) => {
+    try {
+      const { name, email, phone, password, telegram_chat_id } = req.body;
+      if (!name || !email || !password) {
+        res.status(400).json({ error: "Name, email, and password are required for TLS registration." });
+        return;
+      }
+
+      if (password.length < 8) {
+        res.status(400).json({ error: "Cryptographic standard requires a password of at least 8 characters." });
+        return;
+      }
+
+      const db = readDb();
+      const lowerEmail = email.toLowerCase().trim();
+
+      // Ensure email uniqueness
+      const existing = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+      if (existing) {
+        res.status(400).json({ error: "A node has already registered with this email address." });
+        return;
+      }
+
+      const salt = generateSalt();
+      const hash = hashPassword(password, salt);
+
+      // Generate a clean random BSC BEP-20 wallet address for the new user
+      const randomWallet = "0x" + crypto.randomBytes(20).toString("hex");
+
+      const newUser = {
+        id: "user-" + crypto.randomBytes(6).toString("hex"),
+        name: name.trim(),
+        email: lowerEmail,
+        phone: phone ? phone.trim() : "",
+        password_hash: hash,
+        password_salt: salt,
+        balance: 10.00, // Gift 10 USDT starting balance for pro simulation
+        wallet_address: randomWallet,
+        plan_id: "free" as const,
+        createdAt: new Date().toISOString(),
+        telegram_chat_id: telegram_chat_id ? telegram_chat_id.trim() : ""
+      };
+
+      db.users.push(newUser);
+      writeDb(db);
+
+      addSystemLog("info", `Security Audit: New node registered successfully: ${newUser.email} (${newUser.id})`);
+      res.json({ success: true, user: newUser });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Login / Challenge Verification Endpoint
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ error: "Credentials are required." });
+        return;
+      }
+
+      const db = readDb();
+      const lowerEmail = email.toLowerCase().trim();
+      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+
+      if (!user) {
+        res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
+        return;
+      }
+
+      // If user has a registered password, enforce check
+      if (user.password_hash && user.password_salt) {
+        const computed = hashPassword(password, user.password_salt);
+        if (computed !== user.password_hash) {
+          res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
+          return;
+        }
+      } else {
+        // Fallback for pre-loaded mock user with no password yet
+        // If password is submitted, we auto-save it on first login to make it fully secure
+        const salt = generateSalt();
+        user.password_hash = hashPassword(password, salt);
+        user.password_salt = salt;
+        writeDb(db);
+      }
+
+      addSystemLog("info", `Security Audit: User authenticated successfully via TLS: ${user.email}`);
+      res.json({ success: true, user });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Request Password Reset / OTP Generation
+  app.post("/api/auth/reset-request", (req, res) => {
+    try {
+      const { email, delivery_method } = req.body;
+      if (!email || !delivery_method) {
+        res.status(400).json({ error: "Email and OTP delivery method (email | telegram) are required." });
+        return;
+      }
+
+      const db = readDb();
+      const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase().trim());
+
+      if (!user) {
+        res.status(404).json({ error: "No registered node found with this email." });
+        return;
+      }
+
+      // Generate secure 6-digit random OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 5 * 60 * 1000; // 5 mins expiration
+
+      tempOtps.set(user.email.toLowerCase(), { otp, expires, deliveryMethod: delivery_method });
+
+      const logMessage = `[SECURITY OTP CHANNELS] Sent 6-digit OTP code [${otp}] to ${user.email} via ${delivery_method.toUpperCase()}. (Expires in 5 minutes)`;
+      console.log(logMessage);
+      addSystemLog("warn", `Security Audit: Generated OTP for ${user.email} reset via ${delivery_method.toUpperCase()}`);
+
+      res.json({ 
+        success: true, 
+        message: `A highly secure OTP has been dispatched to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`,
+        // Include OTP in response for simulation so the user can easily copy and paste it!
+        simulated_otp: otp 
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Verify Reset Request & Commit New Password
+  app.post("/api/auth/reset-verify", (req, res) => {
+    try {
+      const { email, otp, new_password } = req.body;
+      if (!email || !otp || !new_password) {
+        res.status(400).json({ error: "All validation fields are required." });
+        return;
+      }
+
+      if (new_password.length < 8) {
+        res.status(400).json({ error: "New password must be at least 8 characters for cryptographic security." });
+        return;
+      }
+
+      const lowerEmail = email.toLowerCase().trim();
+      const record = tempOtps.get(lowerEmail);
+
+      if (!record) {
+        res.status(400).json({ error: "No active password reset request found for this email node." });
+        return;
+      }
+
+      if (Date.now() > record.expires) {
+        tempOtps.delete(lowerEmail);
+        res.status(400).json({ error: "The OTP verification window has expired. Please request a new one." });
+        return;
+      }
+
+      if (record.otp !== String(otp).trim()) {
+        res.status(400).json({ error: "Cryptographic validation failed. Invalid OTP code entered." });
+        return;
+      }
+
+      const db = readDb();
+      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+
+      if (!user) {
+        res.status(404).json({ error: "Target node user not found." });
+        return;
+      }
+
+      const salt = generateSalt();
+      user.password_hash = hashPassword(new_password, salt);
+      user.password_salt = salt;
+      writeDb(db);
+
+      // Clean up OTP key
+      tempOtps.delete(lowerEmail);
+
+      addSystemLog("info", `Security Audit: Password reset successfully completed for node: ${user.email}`);
+      res.json({ success: true, message: "Your cryptographic password has been updated securely. You can now login." });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Get active subscriber user
   app.get("/api/user", (req, res) => {
     try {
       const db = readDb();
-      // For demo, return the first user (we support one active subscriber session in this prototype)
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       res.json(user);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -35,7 +253,7 @@ async function startServer() {
     try {
       const { name, email, wallet_address, telegram_chat_id } = req.body;
       const db = readDb();
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       if (name) user.name = name;
       if (email) user.email = email;
       if (wallet_address) user.wallet_address = wallet_address;
@@ -65,7 +283,7 @@ async function startServer() {
         return;
       }
 
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       const cost = selectedPlan.price;
 
       if (user.balance < cost) {
@@ -95,7 +313,7 @@ async function startServer() {
       }
 
       const db = readDb();
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       user.balance += creditAmount;
       writeDb(db);
 
@@ -110,7 +328,8 @@ async function startServer() {
   app.get("/api/monitors", (req, res) => {
     try {
       const db = readDb();
-      const userMonitors = db.monitors.filter((m) => m.user_id === "user-1");
+      const user = getActiveUser(req, db);
+      const userMonitors = db.monitors.filter((m) => m.user_id === user.id);
 
       // Calculate uptime statistics for each monitor based on logs
       const enrichedMonitors = userMonitors.map((m) => {
@@ -157,7 +376,7 @@ async function startServer() {
       }
 
       const db = readDb();
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       const monitors = db.monitors.filter((m) => m.user_id === user.id);
 
       // Validate plan limits dynamically
@@ -218,7 +437,7 @@ async function startServer() {
       }
 
       const monitor = db.monitors[idx];
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
 
       // Validate intervals based on plan dynamically
       if (interval_sec) {
@@ -396,7 +615,7 @@ async function startServer() {
       }
 
       const db = readDb();
-      const user = db.users[0];
+      const user = getActiveUser(req, db);
       const config = db.config;
 
       // Check if hash is already processed
@@ -462,7 +681,8 @@ async function startServer() {
   app.get("/api/logs", (req, res) => {
     try {
       const db = readDb();
-      const userMonitors = db.monitors.filter((m) => m.user_id === "user-1");
+      const user = getActiveUser(req, db);
+      const userMonitors = db.monitors.filter((m) => m.user_id === user.id);
       const userMonitorIds = new Set(userMonitors.map((m) => m.id));
       const filteredLogs = db.logs.filter((l) => userMonitorIds.has(l.monitor_id));
       

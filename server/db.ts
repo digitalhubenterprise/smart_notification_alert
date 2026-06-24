@@ -5,6 +5,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  password_hash?: string;
+  password_salt?: string;
   balance: number; // in USDT
   wallet_address: string;
   plan_id: "free" | "pro" | "enterprise";
@@ -132,6 +135,16 @@ const DEFAULT_CONFIG: AlertConfig = {
 
 const INITIAL_DB: DatabaseSchema = {
   users: [
+    {
+      id: "user-admin",
+      name: "Super Admin",
+      email: "admin@uptimepro.io",
+      balance: 1000.0,
+      wallet_address: "0x1234567890abcdef1234567890abcdef12345678",
+      plan_id: "enterprise",
+      createdAt: new Date().toISOString(),
+      telegram_chat_id: "",
+    },
     {
       id: "user-1",
       name: "Demo Subscriber",

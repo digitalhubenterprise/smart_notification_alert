@@ -20,16 +20,48 @@ import {
   Settings,
   Wallet,
   LogOut,
-  ArrowUpRight
+  ArrowUpRight,
+  Lock,
+  Mail,
+  Smartphone,
+  Key
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SubscriberDashboard from "./components/SubscriberDashboard.tsx";
 import AdminDashboard from "./components/AdminDashboard.tsx";
+import LandingPage from "./components/LandingPage.tsx";
 import { User, Monitor, Payment, AlertConfig, SubscriptionPlan } from "./types.ts";
 
 export default function App() {
   // Session Login Status
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Navigation State when not logged in ("landing", "login", "register", "forgot_password")
+  const [activePage, setActivePage] = useState<"landing" | "login" | "register" | "forgot_password">("landing");
+
+  // Login Input Credentials
+  const [loginEmail, setLoginEmail] = useState("subscriber@uptimepro.io");
+  const [loginPassword, setLoginPassword] = useState("password123");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // Register Form State
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerChatId, setRegisterChatId] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // Password Reset / Forgot Password State
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotDeliveryMethod, setForgotDeliveryMethod] = useState<"email" | "telegram">("email");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [simulatedOtp, setSimulatedOtp] = useState<string | null>(null);
 
   // Active Role State ("subscriber" or "admin")
   const [activeRole, setActiveRole] = useState<"subscriber" | "admin">("subscriber");
@@ -58,14 +90,17 @@ export default function App() {
   const loadPlatformData = async (silent = false) => {
     if (!silent) setIsRefreshing(true);
     try {
+      const headers: Record<string, string> = {
+        "x-user-email": loginEmail
+      };
       // Parallel fetches for speed and reliability
       const [userRes, monitorsRes, paymentsRes, configRes, allUsersRes, plansRes] = await Promise.all([
-        fetch("/api/user"),
-        fetch("/api/monitors"),
-        fetch("/api/payment/history"),
-        fetch("/api/config"),
-        fetch("/api/admin/users"),
-        fetch("/api/plans")
+        fetch(`/api/user?email=${encodeURIComponent(loginEmail)}`, { headers }),
+        fetch(`/api/monitors?email=${encodeURIComponent(loginEmail)}`, { headers }),
+        fetch(`/api/payment/history?email=${encodeURIComponent(loginEmail)}`, { headers }),
+        fetch(`/api/config?email=${encodeURIComponent(loginEmail)}`, { headers }),
+        fetch(`/api/admin/users?email=${encodeURIComponent(loginEmail)}`, { headers }),
+        fetch(`/api/plans?email=${encodeURIComponent(loginEmail)}`, { headers })
       ]);
 
       if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !allUsersRes.ok || !plansRes.ok) {
@@ -82,6 +117,8 @@ export default function App() {
       ]);
 
       setUser(userData);
+      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || loginEmail.toLowerCase().includes("admin");
+      setActiveRole(isLocalAdmin ? "admin" : "subscriber");
       setAllUsers(allUsersData);
       setMonitors(monitorsData);
       setPayments(paymentsData);
@@ -101,6 +138,156 @@ export default function App() {
   useEffect(() => {
     loadPlatformData();
   }, []);
+
+  // Cryptographic Authentication Handlers
+
+  // Login Handler
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Login handshake failed.");
+      }
+
+      const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
+      const detectedRole = isLocalAdmin ? "admin" : "subscriber";
+      setActiveRole(detectedRole);
+      setIsLoggedIn(true);
+      
+      // Load platform metrics synchronously for the newly logged-in account
+      setTimeout(() => {
+        loadPlatformData(true);
+      }, 50);
+    } catch (err: any) {
+      setAuthError(err.message || "Cryptographic authentication failed. Verify credentials.");
+    }
+  };
+
+  // Registration Handler
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsRegistering(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: registerName,
+          email: registerEmail,
+          phone: registerPhone,
+          password: registerPassword,
+          telegram_chat_id: registerChatId
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "TLS Registration failed.");
+      }
+
+      setAuthSuccess(`Secure node profile registered! You can now log in using your password.`);
+      setLoginEmail(registerEmail);
+      setLoginPassword("");
+      
+      // Clear registration form
+      setRegisterName("");
+      setRegisterEmail("");
+      setRegisterPhone("");
+      setRegisterPassword("");
+      setRegisterChatId("");
+
+      // Switch to login view
+      setActivePage("login");
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to register secure node.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  // OTP Dispatch Request
+  const handleRequestOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsRequestingOtp(true);
+    setSimulatedOtp(null);
+
+    try {
+      const res = await fetch("/api/auth/reset-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotEmail,
+          delivery_method: forgotDeliveryMethod
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "OTP dispatch failed.");
+      }
+
+      setOtpSent(true);
+      setSimulatedOtp(data.simulated_otp || null);
+      setAuthSuccess(data.message || `Secure OTP token dispatched via ${forgotDeliveryMethod.toUpperCase()}.`);
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to request OTP. Check email node registration.");
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
+
+  // OTP Verification & Commit Password Reset
+  const handleVerifyResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsVerifyingOtp(true);
+
+    try {
+      const res = await fetch("/api/auth/reset-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotEmail,
+          otp: forgotOtp,
+          new_password: forgotNewPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Cryptographic OTP verification failed.");
+      }
+
+      setAuthSuccess(data.message || "Password successfully reset! Secure node updated.");
+      setLoginEmail(forgotEmail);
+      setLoginPassword("");
+      
+      // Clear forgot state
+      setForgotEmail("");
+      setForgotOtp("");
+      setForgotNewPassword("");
+      setOtpSent(false);
+      setSimulatedOtp(null);
+
+      // Switch to login view
+      setActivePage("login");
+    } catch (err: any) {
+      setAuthError(err.message || "Verification failed. Check the code and retry.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full select-none font-sans">
@@ -125,41 +312,6 @@ export default function App() {
         >
           <X className="w-4 h-4" />
         </button>
-      </div>
-
-      {/* Role / Workspace Toggle Switcher */}
-      <div className="p-4 border-b border-slate-800/50 space-y-2">
-        <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase block px-2">Console View</span>
-        <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-850">
-          <button
-            onClick={() => {
-              setActiveRole("subscriber");
-              setIsSidebarOpen(false);
-            }}
-            className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
-              activeRole === "subscriber"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            <UserIcon className="w-4 h-4" />
-            <span>Subscriber</span>
-          </button>
-          <button
-            onClick={() => {
-              setActiveRole("admin");
-              setIsSidebarOpen(false);
-            }}
-            className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
-              activeRole === "admin"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>Super Admin</span>
-          </button>
-        </div>
       </div>
 
       {/* Dynamic Navigation Menu Items */}
@@ -341,7 +493,9 @@ export default function App() {
         <button
           onClick={() => {
             setIsLoggedIn(false);
+            setActivePage("landing");
             setIsSidebarOpen(false);
+            setActiveRole("subscriber");
           }}
           className="w-full px-3 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-rose-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-rose-950 hover:border-rose-900/50"
         >
@@ -371,92 +525,461 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
+    if (activePage === "landing") {
+      return (
+        <LandingPage 
+          onLoginClick={() => {
+            setActivePage("login");
+            setAuthError(null);
+            setAuthSuccess(null);
+          }} 
+          onRegisterClick={() => {
+            setActivePage("register");
+            setAuthError(null);
+            setAuthSuccess(null);
+          }}
+          plans={plans} 
+        />
+      );
+    }
+
+    // Password strength score calculation helper
+    const getPasswordStrength = (pass: string) => {
+      if (!pass) return { score: 0, label: "None", color: "text-slate-500", bar: "w-0 bg-slate-800" };
+      let score = 0;
+      if (pass.length >= 8) score += 1;
+      if (/[A-Z]/.test(pass)) score += 1;
+      if (/[0-9]/.test(pass)) score += 1;
+      if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+      
+      if (score <= 1) return { score, label: "Weak Password", color: "text-rose-450 font-bold", bar: "w-1/3 bg-rose-500" };
+      if (score <= 3) return { score, label: "Moderate Protection", color: "text-amber-455 font-bold", bar: "w-2/3 bg-amber-500" };
+      return { score, label: "Strong Password", color: "text-emerald-450 font-bold", bar: "w-full bg-emerald-500" };
+    };
+
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 selection:bg-indigo-500/15 font-sans relative overflow-hidden">
         {/* Ambient background glows */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-3xl -z-10 animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full filter blur-3xl -z-10 animate-pulse duration-4000" />
 
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl relative z-10">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => {
+            setActivePage("landing");
+            setAuthError(null);
+            setAuthSuccess(null);
+          }}
+          className="absolute top-6 left-6 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-xl"
+        >
+          <span>&larr;</span>
+          <span>Back to Homepage</span>
+        </button>
+
+        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl relative z-10 my-8">
           <div className="text-center space-y-2">
             <div className="inline-flex p-3.5 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-600/20 mb-2">
-              <Network className="w-8 h-8 animate-pulse" />
+              <Shield className="w-8 h-8 animate-pulse" />
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">UptimePro Portal</h1>
-            <p className="text-xs text-slate-400">Decoupled Latency & Node Monitoring Gateway</p>
+            <p className="text-xs text-slate-400">Enterprise Latency & Uptime Monitoring Portal</p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Select Target Console View</label>
-              <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
-                <button
-                  onClick={() => setActiveRole("subscriber")}
-                  className={`py-3 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                    activeRole === "subscriber"
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <UserIcon className="w-4 h-4" />
-                  <span>Subscriber</span>
-                </button>
-                <button
-                  onClick={() => setActiveRole("admin")}
-                  className={`py-3 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                    activeRole === "admin"
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <Shield className="w-4 h-4" />
-                  <span>Super Admin</span>
-                </button>
-              </div>
-            </div>
+          {/* Secure Handshake Badges */}
+          <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-850 flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
+              <span className="text-slate-400">SECURE ENCRYPTED SESSION</span>
+            </span>
+            <span className="text-emerald-500 flex items-center gap-1">
+              <span>SECURE CONNECTION ACTIVE</span>
+            </span>
+          </div>
 
-            <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-3">
-              <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
-                <span>Secure Node Connection</span>
-                <span className="text-emerald-500 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
-                  <span>TLS 1.3 Active</span>
+          {/* Global Auth Errors / Successes */}
+          {authError && (
+            <div className="p-3.5 bg-rose-950/30 border border-rose-900/50 rounded-xl text-rose-300 text-xs font-medium space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-rose-200">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                Authentication Error:
+              </p>
+              <p className="text-[11px] leading-relaxed opacity-90">{authError}</p>
+            </div>
+          )}
+
+          {authSuccess && (
+            <div className="p-3.5 bg-emerald-950/30 border border-emerald-900/50 rounded-xl text-emerald-300 text-xs font-medium space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-emerald-200">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Authentication Successful:
+              </p>
+              <p className="text-[11px] leading-relaxed opacity-90">{authSuccess}</p>
+            </div>
+          )}
+
+          {/* VIEW: LOGIN PORTAL */}
+          {activePage === "login" && (
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="subscriber@uptimepro.io or admin@uptimepro.io"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage("forgot_password");
+                        setAuthError(null);
+                        setAuthSuccess(null);
+                      }}
+                      className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      Recover Account Access?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                    <input
+                      type="password"
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Authorize & Log In</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+
+              <div className="text-center pt-2">
+                <span className="text-[11px] text-slate-500">
+                  New operator?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePage("register");
+                      setAuthError(null);
+                      setAuthSuccess(null);
+                    }}
+                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    Create an account &rarr;
+                  </button>
                 </span>
               </div>
-              <div className="space-y-2">
-                <div className="relative">
+            </form>
+          )}
+
+          {/* VIEW: REGISTER PORTAL */}
+          {activePage === "register" && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Full Name</label>
                   <input
                     type="text"
-                    disabled
-                    value={activeRole === "subscriber" ? "subscriber@uptimepro.io" : "admin@uptimepro.io"}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 font-medium outline-none cursor-not-allowed"
+                    required
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    placeholder="E.g. John Doe"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
-                <div className="relative">
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                    <input
+                      type="email"
+                      required
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      placeholder="operator@domain.com"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Phone Number</label>
+                  <div className="relative">
+                    <Smartphone className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                    <input
+                      type="tel"
+                      required
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value)}
+                      placeholder="+1 (555) 000-0000"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                    <input
+                      type="password"
+                      required
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      placeholder="Minimum 8 characters"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  {/* Dynamic Password Strength Indicator */}
+                  {registerPassword && (
+                    <div className="pt-2 space-y-1">
+                      <div className="flex justify-between items-center text-[9px]">
+                        <span className="text-slate-500 uppercase tracking-widest font-bold">Password Strength:</span>
+                        <span className={getPasswordStrength(registerPassword).color}>
+                          {getPasswordStrength(registerPassword).label}
+                        </span>
+                      </div>
+                      <div className="w-full h-1 bg-slate-850 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-300 ${getPasswordStrength(registerPassword).bar}`} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Telegram Chat ID</label>
+                    <span className="text-[8px] text-slate-500 uppercase font-black px-1.5 py-0.5 bg-slate-850 rounded-sm">Optional</span>
+                  </div>
                   <input
-                    type="password"
-                    disabled
-                    value="••••••••••••••••"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 font-mono outline-none cursor-not-allowed"
+                    type="text"
+                    value={registerChatId}
+                    onChange={(e) => setRegisterChatId(e.target.value)}
+                    placeholder="E.g. 58190302"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
               </div>
-            </div>
 
-            <button
-              onClick={() => {
-                setIsLoggedIn(true);
-                loadPlatformData(true);
-              }}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>Connect Cryptographic Node</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
-          </div>
+              <button
+                type="submit"
+                disabled={isRegistering}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <span>{isRegistering ? "Registering account..." : "Create Account"}</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+
+              <div className="text-center pt-2">
+                <span className="text-[11px] text-slate-500">
+                  Already registered?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePage("login");
+                      setAuthError(null);
+                      setAuthSuccess(null);
+                    }}
+                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    Log in here &rarr;
+                  </button>
+                </span>
+              </div>
+            </form>
+          )}
+
+          {/* VIEW: FORGOT PASSWORD */}
+          {activePage === "forgot_password" && (
+            <div className="space-y-4">
+              {!otpSent ? (
+                // STEP 1: Enter email and select delivery method
+                <form onSubmit={handleRequestOtpSubmit} className="space-y-4">
+                  <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Enter Email Address</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                        <input
+                          type="email"
+                          required
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          placeholder="operator@domain.com"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">OTP Delivery Method</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setForgotDeliveryMethod("email")}
+                          className={`p-3.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                            forgotDeliveryMethod === "email"
+                              ? "bg-indigo-950/40 border-indigo-500 text-indigo-200"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          <Mail className="w-4 h-4" />
+                          <span>Email</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setForgotDeliveryMethod("telegram")}
+                          className={`p-3.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                            forgotDeliveryMethod === "telegram"
+                              ? "bg-indigo-950/40 border-indigo-500 text-indigo-200"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span>Telegram</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isRequestingOtp}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>{isRequestingOtp ? "Generating OTP..." : "Request Verification Code"}</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </button>
+                </form>
+              ) : (
+                // STEP 2: Input OTP and New Password
+                <form onSubmit={handleVerifyResetSubmit} className="space-y-4">
+                  {/* SIMULATED OTP DISPATCH BOX (EXTREMELY USEFUL FOR INTERACTIVE SIMULATION) */}
+                  {simulatedOtp && (
+                    <div className="p-3.5 bg-slate-950 border-2 border-dashed border-indigo-500/40 rounded-2xl space-y-2 select-none animate-pulse">
+                      <div className="flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
+                        <span className="flex items-center gap-1">
+                          <Key className="w-3 h-3 text-indigo-400 animate-spin" />
+                          <span>Simulated Verification Code Sent</span>
+                        </span>
+                        <span>{forgotDeliveryMethod.toUpperCase()} Channel</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-slate-400">Your temporary 6-digit security code:</p>
+                        <p className="text-base font-black text-white font-mono tracking-widest bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
+                          {simulatedOtp}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">6-Digit Verification Code</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        value={forgotOtp}
+                        onChange={(e) => setForgotOtp(e.target.value)}
+                        placeholder="E.g. 123456"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-center text-sm text-white font-mono tracking-widest placeholder-slate-700 outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">New Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                        <input
+                          type="password"
+                          required
+                          value={forgotNewPassword}
+                          onChange={(e) => setForgotNewPassword(e.target.value)}
+                          placeholder="At least 8 characters"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      {forgotNewPassword && (
+                        <div className="pt-2 space-y-1">
+                          <div className="flex justify-between items-center text-[9px]">
+                            <span className="text-slate-500 uppercase tracking-widest font-bold">Password Strength:</span>
+                            <span className={getPasswordStrength(forgotNewPassword).color}>
+                              {getPasswordStrength(forgotNewPassword).label}
+                            </span>
+                          </div>
+                          <div className="w-full h-1 bg-slate-850 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-300 ${getPasswordStrength(forgotNewPassword).bar}`} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVerifyingOtp}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>{isVerifyingOtp ? "Saving password..." : "Save New Password"}</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setSimulatedOtp(null);
+                      setForgotOtp("");
+                    }}
+                    className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                  >
+                    Resend Verification Code
+                  </button>
+                </form>
+              )}
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActivePage("login");
+                    setAuthError(null);
+                    setAuthSuccess(null);
+                    setOtpSent(false);
+                    setSimulatedOtp(null);
+                  }}
+                  className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                >
+                  &larr; Back to Login Portal
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="text-center">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">UptimePro Secure Session Sandbox</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">UptimePro Secure Portal Session</span>
           </div>
         </div>
       </div>
