@@ -1627,7 +1627,6 @@ export default function SubscriberDashboard({
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">BEP-20 Wallet Address (Binance Smart Chain)</label>
                   <input
                     type="text"
-                    required
                     pattern="^0x[a-fA-F0-9]{40}$"
                     title="Please enter a valid BSC/BEP-20 40-character hex wallet address starting with 0x"
                     value={profileWallet}
@@ -1703,7 +1702,6 @@ export default function SubscriberDashboard({
                     <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Your Telegram Chat ID</label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. 518491029"
                       value={profileTelegramChatId}
                       onChange={(e) => setProfileTelegramChatId(e.target.value)}
