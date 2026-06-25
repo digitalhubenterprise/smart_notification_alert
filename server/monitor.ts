@@ -241,6 +241,18 @@ async function runEngineTick() {
     const monitors = db.monitors;
     const now = Date.now();
 
+    // Automatically clear all logs (monitor execution history & system alert logs) older than 12 hours
+    const twelveHoursAgo = now - 12 * 60 * 60 * 1000;
+    const initialLogsCount = db.logs.length;
+    const initialSysLogsCount = db.systemLogs.length;
+
+    db.logs = db.logs.filter((l) => new Date(l.timestamp).getTime() >= twelveHoursAgo);
+    db.systemLogs = db.systemLogs.filter((sl) => new Date(sl.timestamp).getTime() >= twelveHoursAgo);
+
+    if (db.logs.length !== initialLogsCount || db.systemLogs.length !== initialSysLogsCount) {
+      writeDb(db);
+    }
+
     for (const monitor of monitors) {
       // Calculate if monitor is due for a check
       // For simple execution, we run checks if the difference since last check >= interval

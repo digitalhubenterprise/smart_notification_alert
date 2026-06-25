@@ -15,6 +15,9 @@ import {
   Clock, 
   ExternalLink,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   TrendingUp,
   X,
   Smartphone,
@@ -110,6 +113,11 @@ export default function SubscriberDashboard({
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination states for history and alerts logs
+  const [historyPage, setHistoryPage] = useState(1);
+  const [alertPage, setAlertPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Profile Form States
   const [profileName, setProfileName] = useState(user.name);
@@ -922,61 +930,6 @@ export default function SubscriberDashboard({
       {activeTab === "wallet" && (
         <div className="space-y-8 animate-fade-in">
           
-          {/* Top Cryptographic Header card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-            {/* Ambient gradients */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full filter blur-xl" />
-            
-            <div className="space-y-3 relative z-10 text-center md:text-left">
-              <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30 text-indigo-300 font-extrabold text-[10px] uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>BSC Decentralized Treasury</span>
-              </div>
-              <h2 className="text-2xl font-black tracking-tight text-white leading-none">USDT Decentralized Deposit Desk</h2>
-              <p className="text-xs text-slate-350 max-w-xl leading-relaxed">
-                Fund your UptimePro platform account directly from your Binance Smart Chain wallet. Your balance is debited automatically only to sustain active server check workers.
-              </p>
-            </div>
-
-            {/* Futuristic Metallic Gold/Slate Credit Card Mockup */}
-            <div className="w-full max-w-[340px] aspect-[1.58/1] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-5 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col justify-between group cursor-pointer">
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              
-              <div className="flex justify-between items-start">
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase tracking-widest text-indigo-400 font-black">UPTIMEPRO UTILITY BLOCK</span>
-                  <span className="text-xs font-black tracking-tight text-white">SECURED ESCROW</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-900 px-2.5 py-0.5 rounded-md text-[8px] font-bold text-emerald-400">
-                  <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>BEP-20 USDT</span>
-                </div>
-              </div>
-
-              {/* Gold Chip & NFC Wireless visual */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-7 bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 rounded-md border border-amber-300 relative overflow-hidden flex items-center justify-center shadow-xs">
-                  <Cpu className="w-5 h-5 text-amber-900/60" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">SECURE SIGNATURE</span>
-                  <span className="text-[10px] font-mono font-bold text-slate-200 tracking-wide">BSC BLOCKCHAIN LINK</span>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold block">Current Active Balance</span>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-black text-white tracking-tight">${user.balance.toFixed(2)}</span>
-                  <span className="text-[9px] font-mono text-slate-400 truncate max-w-[120px]">{user.wallet_address || "0x..."}</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Left Column: Form & sandbox details (7 cols) */}
@@ -1069,58 +1022,6 @@ export default function SubscriberDashboard({
                     </div>
                   )}
                 </form>
-              </div>
-
-              {/* Sandbox Simulators Panel */}
-              <div className="bg-slate-50 border border-slate-200/60 rounded-3xl p-6 space-y-4">
-                <div>
-                  <span className="text-xs font-extrabold text-slate-800 block">Sandbox Payment Simulators</span>
-                  <span className="text-[11px] text-slate-500">Test live automatic payment parsing and state updates without spending real blockchain gas.</span>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => {
-                      setTxnHash("0x0000000000000000000000000000000000000000000000000000000000000000");
-                      setTxnSuccess("");
-                      setTxnError("");
-                    }}
-                    className="p-4 bg-white hover:bg-slate-100 border border-slate-150 rounded-2xl text-left space-y-1 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
-                  >
-                    <span className="text-xs font-black text-slate-800 group-hover:text-indigo-600 block transition-colors">Simulate 10 USDT Deposit</span>
-                    <span className="text-[10px] text-slate-400 font-mono block">Load Hash: 0x00...</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setTxnHash("0x1111111111111111111111111111111111111111111111111111111111111111");
-                      setTxnSuccess("");
-                      setTxnError("");
-                    }}
-                    className="p-4 bg-white hover:bg-slate-100 border border-slate-150 rounded-2xl text-left space-y-1 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
-                  >
-                    <span className="text-xs font-black text-slate-800 group-hover:text-indigo-600 block transition-colors">Simulate 25 USDT Deposit</span>
-                    <span className="text-[10px] text-slate-400 font-mono block">Load Hash: 0x11...</span>
-                  </button>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500 font-bold">
-                  <span>Directly credit test USDT:</span>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button 
-                      onClick={() => handleSimulatePayment(50)}
-                      className="flex-1 sm:flex-none px-4 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-150 text-indigo-600 rounded-xl text-xs font-bold cursor-pointer transition-all"
-                    >
-                      + 50 USDT
-                    </button>
-                    <button 
-                      onClick={() => handleSimulatePayment(100)}
-                      className="flex-1 sm:flex-none px-4 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-150 text-indigo-600 rounded-xl text-xs font-bold cursor-pointer transition-all"
-                    >
-                      + 100 USDT
-                    </button>
-                  </div>
-                </div>
               </div>
 
             </div>
@@ -1353,33 +1254,11 @@ export default function SubscriberDashboard({
       {activeTab === "history" && (
         <div className="space-y-6 animate-fade-in">
           
-          {/* Header Card */}
-          <div className="bg-slate-900 text-white rounded-3xl p-6 md:p-8 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-2xl" />
-            <div className="space-y-2 relative z-10">
-              <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest">
-                Audit Trail
-              </span>
-              <h2 className="text-2xl font-black tracking-tight leading-none text-white">Execution Logs & Events</h2>
-              <p className="text-xs text-slate-350 max-w-xl leading-relaxed">
-                Inspect historical uptime monitor ping responses, HTTP status code logs, and automated notifications sent across custom Telegram or Email channels.
-              </p>
-            </div>
-            <button
-              onClick={fetchUnifiedHistory}
-              disabled={isHistoryLoading}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isHistoryLoading ? "animate-spin" : ""}`} />
-              <span>Sync Audit Logs</span>
-            </button>
-          </div>
-
           {/* Filtering bar */}
           <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex bg-slate-100 p-1 rounded-xl w-fit gap-1">
               <button
-                onClick={() => { setHistorySubTab("history"); setSearchQuery(""); }}
+                onClick={() => { setHistorySubTab("history"); setSearchQuery(""); setHistoryPage(1); }}
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   historySubTab === "history"
                     ? "bg-white text-slate-800 shadow-2xs"
@@ -1389,7 +1268,7 @@ export default function SubscriberDashboard({
                 Uptime History ({historyLogs.length})
               </button>
               <button
-                onClick={() => { setHistorySubTab("alerts"); setSearchQuery(""); }}
+                onClick={() => { setHistorySubTab("alerts"); setSearchQuery(""); setAlertPage(1); }}
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   historySubTab === "alerts"
                     ? "bg-white text-slate-800 shadow-2xs"
@@ -1400,15 +1279,26 @@ export default function SubscriberDashboard({
               </button>
             </div>
 
-            <div className="relative flex-1 max-w-xs">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder={historySubTab === "history" ? "Search by monitor or status..." : "Search alerts description..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder={historySubTab === "history" ? "Search by monitor or status..." : "Search alerts description..."}
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setHistoryPage(1); setAlertPage(1); }}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                />
+              </div>
+
+              <button
+                onClick={fetchUnifiedHistory}
+                disabled={isHistoryLoading}
+                className="p-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 text-xs font-bold rounded-xl shadow-2xs border border-indigo-150 transition-all flex items-center justify-center cursor-pointer shrink-0"
+                title="Sync logs from server"
+              >
+                <RefreshCw className={`w-4 h-4 ${isHistoryLoading ? "animate-spin" : ""}`} />
+              </button>
             </div>
           </div>
 
@@ -1425,119 +1315,237 @@ export default function SubscriberDashboard({
             </div>
           ) : historySubTab === "history" ? (
             <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xs">
-              {historyLogs.filter(log => {
-                const query = searchQuery.toLowerCase();
+              {(() => {
+                const filtered = historyLogs.filter(log => {
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    log.monitorName.toLowerCase().includes(query) ||
+                    log.status.toLowerCase().includes(query) ||
+                    (log.error_message && log.error_message.toLowerCase().includes(query))
+                  );
+                }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+                const startIndex = (historyPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+                if (totalItems === 0) {
+                  return <div className="p-12 text-center text-slate-400 text-xs font-semibold">No matching execution logs found.</div>;
+                }
+
                 return (
-                  log.monitorName.toLowerCase().includes(query) ||
-                  log.status.toLowerCase().includes(query) ||
-                  (log.error_message && log.error_message.toLowerCase().includes(query))
-                );
-              }).length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-xs">No matching execution logs found.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                        <th className="py-3 px-4">Monitor Info</th>
-                        <th className="py-3 px-4 text-center">Status</th>
-                        <th className="py-3 px-4 text-right">Latency</th>
-                        <th className="py-3 px-4">HTTP Code</th>
-                        <th className="py-3 px-4">Outage details</th>
-                        <th className="py-3 px-4">Timestamp</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {historyLogs
-                        .filter(log => {
-                          const query = searchQuery.toLowerCase();
-                          return (
-                            log.monitorName.toLowerCase().includes(query) ||
-                            log.status.toLowerCase().includes(query) ||
-                            (log.error_message && log.error_message.toLowerCase().includes(query))
-                          );
-                        })
-                        .map((log) => (
-                          <tr key={log.id} className="hover:bg-slate-50/20 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <div className="font-bold text-slate-800">{log.monitorName}</div>
-                              <div className="text-[10px] text-slate-450 font-mono break-all">{log.monitorUrl}</div>
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1 ${
-                                log.status === "up"
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                  : "bg-rose-50 text-rose-700 border border-rose-100"
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${log.status === "up" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                                <span className="uppercase">{log.status}</span>
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-850">
-                              {log.status === "up" ? `${log.response_time}ms` : "-"}
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-slate-500 font-semibold">
-                              {log.status_code || "0"}
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-550 max-w-xs truncate" title={log.error_message}>
-                              {log.error_message || <span className="text-slate-300 italic">No errors</span>}
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                              {new Date(log.timestamp).toLocaleString()}
-                            </td>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500">Monitor Info</th>
+                            <th className="py-3.5 px-4 text-center font-extrabold text-slate-500">Status</th>
+                            <th className="py-3.5 px-4 text-right font-extrabold text-slate-500">Latency</th>
+                            <th className="py-3.5 px-4 font-extrabold text-slate-500">HTTP Code</th>
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500">Outage details</th>
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500 text-right">Timestamp</th>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {paginated.map((log) => (
+                            <tr key={log.id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="py-4 px-6">
+                                <div className="font-bold text-slate-800 text-sm">{log.monitorName}</div>
+                                <div className="text-[10px] text-slate-400 font-mono break-all mt-0.5">{log.monitorUrl}</div>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 ${
+                                  log.status === "up"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                    : "bg-rose-50 text-rose-700 border border-rose-100"
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${log.status === "up" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                  <span className="uppercase tracking-wider">{log.status}</span>
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-right font-mono font-black text-slate-700">
+                                {log.status === "up" ? `${log.response_time}ms` : "-"}
+                              </td>
+                              <td className="py-4 px-4 font-mono text-slate-600 font-semibold">
+                                <span className={`px-2 py-0.5 rounded-md ${
+                                  log.status_code >= 200 && log.status_code < 400 
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                                    : "bg-amber-50 text-amber-700 border border-amber-100"
+                                }`}>
+                                  {log.status_code || "0"}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6 text-slate-550 max-w-xs truncate" title={log.error_message}>
+                                {log.error_message ? (
+                                  <span className="text-rose-600 font-semibold">{log.error_message}</span>
+                                ) : (
+                                  <span className="text-slate-300 italic">No errors</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-6 text-slate-455 font-mono text-[11px] whitespace-nowrap text-right">
+                                {new Date(log.timestamp).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between bg-slate-50/50">
+                      <div className="text-xs text-slate-500">
+                        Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                        <span className="font-bold text-slate-800">
+                          {Math.min(startIndex + itemsPerPage, totalItems)}
+                        </span>{" "}
+                        of <span className="font-bold text-slate-800">{totalItems}</span> logs
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setHistoryPage(1)}
+                          disabled={historyPage === 1}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="First Page"
+                        >
+                          <ChevronsLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setHistoryPage(prev => Math.max(prev - 1, 1))}
+                          disabled={historyPage === 1}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Previous Page"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-bold text-slate-700 px-3">
+                          Page {historyPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setHistoryPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={historyPage === totalPages}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Next Page"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setHistoryPage(totalPages)}
+                          disabled={historyPage === totalPages}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Last Page"
+                        >
+                          <ChevronsRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           ) : (
             <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xs">
-              {alertEvents.filter(evt => {
-                const query = searchQuery.toLowerCase();
-                return evt.message.toLowerCase().includes(query);
-              }).length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-xs">No matching alert logs.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                        <th className="py-3 px-4">Priority</th>
-                        <th className="py-3 px-4">Message description</th>
-                        <th className="py-3 px-4">Timestamp</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {alertEvents
-                        .filter(evt => {
-                          const query = searchQuery.toLowerCase();
-                          return evt.message.toLowerCase().includes(query);
-                        })
-                        .map((evt) => (
-                          <tr key={evt.id} className="hover:bg-slate-50/20 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase inline-block ${
-                                evt.level === "error" || evt.level === "warn"
-                                  ? "bg-rose-50 text-rose-700 border border-rose-100"
-                                  : "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                              }`}>
-                                {evt.level}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 font-bold text-slate-800 font-sans leading-relaxed">
-                              {evt.message}
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                              {new Date(evt.timestamp).toLocaleString()}
-                            </td>
+              {(() => {
+                const filtered = alertEvents.filter(evt => {
+                  const query = searchQuery.toLowerCase();
+                  return evt.message.toLowerCase().includes(query);
+                }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+                const startIndex = (alertPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+                if (totalItems === 0) {
+                  return <div className="p-12 text-center text-slate-400 text-xs font-semibold">No matching alert logs.</div>;
+                }
+
+                return (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500">Priority</th>
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500">Message description</th>
+                            <th className="py-3.5 px-6 font-extrabold text-slate-500 text-right">Timestamp</th>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {paginated.map((evt) => (
+                            <tr key={evt.id} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="py-4 px-6">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase inline-block ${
+                                  evt.level === "error" || evt.level === "warn"
+                                    ? "bg-rose-50 text-rose-700 border border-rose-100"
+                                    : "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                }`}>
+                                  {evt.level}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6 font-bold text-slate-800 font-sans leading-relaxed text-sm">
+                                {evt.message}
+                              </td>
+                              <td className="py-4 px-6 text-slate-455 font-mono text-[11px] whitespace-nowrap text-right">
+                                {new Date(evt.timestamp).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between bg-slate-50/50">
+                      <div className="text-xs text-slate-500">
+                        Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                        <span className="font-bold text-slate-800">
+                          {Math.min(startIndex + itemsPerPage, totalItems)}
+                        </span>{" "}
+                        of <span className="font-bold text-slate-800">{totalItems}</span> alert events
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setAlertPage(1)}
+                          disabled={alertPage === 1}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="First Page"
+                        >
+                          <ChevronsLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setAlertPage(prev => Math.max(prev - 1, 1))}
+                          disabled={alertPage === 1}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Previous Page"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-bold text-slate-700 px-3">
+                          Page {alertPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setAlertPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={alertPage === totalPages}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Next Page"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setAlertPage(totalPages)}
+                          disabled={alertPage === totalPages}
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 disabled:opacity-40 transition-all cursor-pointer"
+                          title="Last Page"
+                        >
+                          <ChevronsRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
