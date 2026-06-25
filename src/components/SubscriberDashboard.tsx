@@ -32,7 +32,9 @@ import {
   Wallet,
   Sparkles,
   Cpu,
-  Tv
+  Tv,
+  Lock,
+  Fingerprint
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
@@ -117,6 +119,9 @@ export default function SubscriberDashboard({
   // Pagination states for history and alerts logs
   const [historyPage, setHistoryPage] = useState(1);
   const [alertPage, setAlertPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [copiedTxn, setCopiedTxn] = useState<string | null>(null);
+  const [settingsSubTab, setSettingsSubTab] = useState<"profile" | "telegram" | "limits" | "security">("profile");
   const itemsPerPage = 10;
 
   // Profile Form States
@@ -124,6 +129,17 @@ export default function SubscriberDashboard({
   const [profileEmail, setProfileEmail] = useState(user.email);
   const [profileWallet, setProfileWallet] = useState(user.wallet_address);
   const [profileTelegramChatId, setProfileTelegramChatId] = useState(user.telegram_chat_id || "");
+  const [profile2faEmail, setProfile2faEmail] = useState(!!user.two_factor_email);
+  const [profile2faTelegram, setProfile2faTelegram] = useState(!!user.two_factor_telegram);
+
+  // 2FA Setup Verification States
+  const [setup2faMethod, setSetup2faMethod] = useState<"email" | "telegram" | null>(null);
+  const [setup2faOtp, setSetup2faOtp] = useState("");
+  const [simulatedSetupOtp, setSimulatedSetupOtp] = useState<string | null>(null);
+  const [isRequestingSetupOtp, setIsRequestingSetupOtp] = useState(false);
+  const [isVerifyingSetupOtp, setIsVerifyingSetupOtp] = useState(false);
+  const [setupOtpError, setSetupOtpError] = useState("");
+  const [setupOtpSuccess, setSetupOtpSuccess] = useState("");
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState("");
@@ -137,6 +153,8 @@ export default function SubscriberDashboard({
     setProfileEmail(user.email);
     setProfileWallet(user.wallet_address);
     setProfileTelegramChatId(user.telegram_chat_id || "");
+    setProfile2faEmail(!!user.two_factor_email);
+    setProfile2faTelegram(!!user.two_factor_telegram);
   }, [user]);
 
   const fetchUnifiedHistory = async () => {
@@ -171,6 +189,85 @@ export default function SubscriberDashboard({
     }
   }, [activeTab]);
 
+  // Trigger OTP request for secure 2FA Activation
+  const handleToggle2fa = async (method: "email" | "telegram", targetState: boolean) => {
+    setSetupOtpError("");
+    setSetupOtpSuccess("");
+    if (!targetState) {
+      if (method === "email") {
+        setProfile2faEmail(false);
+      } else {
+        setProfile2faTelegram(false);
+      }
+      return;
+    }
+
+    setIsRequestingSetupOtp(true);
+    setSetup2faMethod(method);
+    setSetup2faOtp("");
+    setSimulatedSetupOtp(null);
+
+    try {
+      const res = await fetchWithAuth("/api/auth/2fa/request-enable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delivery_method: method })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate setup OTP.");
+      }
+      setSimulatedSetupOtp(data.simulated_otp || null);
+      setSetupOtpSuccess(data.message || `An OTP code has been sent to your registered ${method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`);
+    } catch (err: any) {
+      setSetupOtpError(err.message || "Failed to request setup code.");
+      setSetup2faMethod(null);
+    } finally {
+      setIsRequestingSetupOtp(false);
+    }
+  };
+
+  // Verify setup OTP and save
+  const handleVerifySetup2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setup2faMethod) return;
+
+    setSetupOtpError("");
+    setSetupOtpSuccess("");
+    setIsVerifyingSetupOtp(true);
+
+    try {
+      const res = await fetchWithAuth("/api/auth/2fa/verify-enable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delivery_method: setup2faMethod,
+          otp: setup2faOtp
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Cryptographic verification failed.");
+      }
+
+      if (setup2faMethod === "email") {
+        setProfile2faEmail(true);
+      } else if (setup2faMethod === "telegram") {
+        setProfile2faTelegram(true);
+      }
+
+      setSettingsSuccess(`Two-Factor Authentication via ${setup2faMethod.toUpperCase()} has been successfully verified and enabled!`);
+      onRefreshData();
+      setSetup2faMethod(null);
+      setSetup2faOtp("");
+      setSimulatedSetupOtp(null);
+    } catch (err: any) {
+      setSetupOtpError(err.message || "Verification failed. Check code and try again.");
+    } finally {
+      setIsVerifyingSetupOtp(false);
+    }
+  };
+
   // Handle Save Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +291,8 @@ export default function SubscriberDashboard({
           email: profileEmail,
           wallet_address: profileWallet,
           telegram_chat_id: profileTelegramChatId,
+          two_factor_email: profile2faEmail,
+          two_factor_telegram: profile2faTelegram,
         }),
       });
 
@@ -1087,29 +1186,6 @@ export default function SubscriberDashboard({
       {/* 4. TAB VIEW - BILLING & SUBSCRIPTIONS */}
       {activeTab === "billing" && (
         <div className="space-y-8 animate-fade-in">
-          
-          {/* Welcome Dashboard Banner */}
-          <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 rounded-3xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl" />
-            
-            <div className="space-y-2 relative z-10 text-center md:text-left">
-              <span className="text-[10px] bg-white/20 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest text-white/95">
-                Billing Dashboard
-              </span>
-              <h2 className="text-2xl font-black tracking-tight leading-none text-white pt-1">Manage Subscription Plans</h2>
-              <p className="text-xs text-indigo-100 max-w-xl leading-relaxed">
-                Add BEP-20 USDT funds over Binance Smart Chain or upgrade your plan instantly. Your balance is debited automatically every month.
-              </p>
-            </div>
-            
-            <button
-              onClick={() => setIsPayOpen(true)}
-              className="px-5 py-3 bg-white text-indigo-700 hover:bg-slate-50 text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Add Gas Funds (BSC)</span>
-            </button>
-          </div>
 
           {/* Pricing Plans Tiers Matrix */}
           <div className="space-y-4">
@@ -1191,58 +1267,185 @@ export default function SubscriberDashboard({
           </div>
 
           {/* Audit table section */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs space-y-4">
-            <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
-              <History className="w-4 h-4 text-slate-500" />
-              <span>Full Payment History Audit Logs</span>
-            </h3>
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                  <History className="w-4.5 h-4.5 text-indigo-600" />
+                  <span>Full Payment History Audit Logs</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">Verifiable gas credits, ledger receipts, and deposit records</p>
+              </div>
+              {payments.length > 0 && (
+                <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-full font-bold">
+                  Total Ledger: {payments.length} Records
+                </span>
+              )}
+            </div>
 
             {payments.length === 0 ? (
-              <span className="text-xs text-slate-400 block text-center py-8 border border-dashed border-slate-150 rounded-2xl font-medium">No payment history discovered yet.</span>
+              <div className="text-center py-12 border border-dashed border-slate-150 rounded-2xl flex flex-col items-center justify-center gap-2.5 bg-slate-50/50">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <History className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-800 font-extrabold block">No transactions found</span>
+                  <span className="text-[11px] text-slate-400 block max-w-xs mx-auto">Once your BSC USDT wallet deposits are confirmed on-chain, receipts will populate here automatically.</span>
+                </div>
+              </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                      <th className="py-3 px-4">Transaction Hash</th>
-                      <th className="py-3 px-4">Block Number</th>
-                      <th className="py-3 px-4 text-right">Credit Amount</th>
-                      <th className="py-3 px-4">Token</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Date Verified</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {payments.map((p) => (
-                      <tr key={p.txn_hash} className="hover:bg-slate-50/20 transition-colors">
-                        <td className="py-3.5 px-4 font-mono text-slate-500 break-all select-all">
-                          {p.txn_hash.slice(0, 12)}...{p.txn_hash.slice(-12)}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400 font-mono">
-                          {p.block_number ?? "N/A"}
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-black text-slate-800">
-                          {p.amount > 0 ? `+$${p.amount.toFixed(2)}` : "-"}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400 font-mono font-bold">
-                          {p.token}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-extrabold ${
-                            p.status === "confirmed" 
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                              : "bg-rose-50 text-rose-700 border border-rose-100"
-                          }`}>
-                            {p.status.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                          {new Date(p.timestamp).toLocaleString()}
-                        </td>
+              <div className="space-y-4">
+                <div className="overflow-x-auto rounded-2xl border border-slate-100/80 shadow-2xs">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-150 text-slate-500 font-black bg-slate-50/70 select-none uppercase tracking-wider text-[9px]">
+                        <th className="py-3.5 px-4 font-extrabold">Transaction Hash</th>
+                        <th className="py-3.5 px-4 font-extrabold">Block Number</th>
+                        <th className="py-3.5 px-4 font-extrabold text-right">Credit Amount</th>
+                        <th className="py-3.5 px-4 font-extrabold text-center">Token</th>
+                        <th className="py-3.5 px-4 font-extrabold text-center">Status</th>
+                        <th className="py-3.5 px-4 font-extrabold text-right">Date Verified</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(() => {
+                        const totalPaymentPages = Math.ceil(payments.length / itemsPerPage);
+                        const safePage = Math.min(Math.max(1, paymentPage), totalPaymentPages || 1);
+                        const startIdx = (safePage - 1) * itemsPerPage;
+                        const paginatedPayments = payments.slice(startIdx, startIdx + itemsPerPage);
+
+                        return paginatedPayments.map((p) => {
+                          const isCopied = copiedTxn === p.txn_hash;
+                          return (
+                            <tr key={p.txn_hash} className="hover:bg-indigo-50/10 transition-colors group">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="font-mono text-slate-600 font-medium tracking-tight bg-slate-50 px-2 py-0.5 rounded border border-slate-100 text-[11px]">
+                                    {p.txn_hash.slice(0, 8)}...{p.txn_hash.slice(-8)}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(p.txn_hash);
+                                      setCopiedTxn(p.txn_hash);
+                                      setTimeout(() => setCopiedTxn(null), 1500);
+                                    }}
+                                    title="Copy transaction hash"
+                                    className={`p-1 rounded-md border transition-all cursor-pointer ${
+                                      isCopied 
+                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                                        : "bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:border-slate-300 shadow-3xs"
+                                    }`}
+                                  >
+                                    {isCopied ? (
+                                      <Check className="w-3 h-3 stroke-[3px]" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-500 font-mono font-medium">
+                                #{p.block_number ?? "N/A"}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <span className="font-mono font-black text-slate-800 text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                  {p.amount > 0 ? `+$${p.amount.toFixed(2)}` : "-"}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-500">
+                                <span className="text-[10px] bg-indigo-50/50 border border-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">
+                                  {p.token}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase inline-flex items-center gap-1 border ${
+                                  p.status === "confirmed" 
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                                    : "bg-rose-50 text-rose-700 border-rose-200"
+                                }`}>
+                                  <span className={`w-1 h-1 rounded-full ${p.status === "confirmed" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-right text-slate-400 font-mono text-[10px] whitespace-nowrap font-medium">
+                                {new Date(p.timestamp).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit"
+                                })}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {(() => {
+                  const totalPaymentPages = Math.ceil(payments.length / itemsPerPage);
+                  const safePage = Math.min(Math.max(1, paymentPage), totalPaymentPages || 1);
+                  const startIdx = (safePage - 1) * itemsPerPage;
+                  const endIdx = Math.min(startIdx + itemsPerPage, payments.length);
+
+                  if (totalPaymentPages <= 1) return null;
+
+                  return (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-500 font-bold select-none">
+                      <div className="text-[11px] text-slate-400 font-medium">
+                        Showing <span className="text-slate-700 font-bold">{startIdx + 1}</span> to{" "}
+                        <span className="text-slate-700 font-bold">{endIdx}</span> of{" "}
+                        <span className="text-slate-700 font-bold">{payments.length}</span> verified records
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setPaymentPage((prev) => Math.max(1, prev - 1))}
+                          disabled={safePage === 1}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                            safePage === 1
+                              ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-3xs"
+                          }`}
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+
+                        {Array.from({ length: totalPaymentPages }).map((_, idx) => {
+                          const pNum = idx + 1;
+                          const isCurrent = pNum === safePage;
+                          return (
+                            <button
+                              key={pNum}
+                              onClick={() => setPaymentPage(pNum)}
+                              className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                isCurrent
+                                  ? "bg-indigo-600 text-white border border-transparent shadow-xs"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-3xs"
+                              }`}
+                            >
+                              {pNum}
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          onClick={() => setPaymentPage((prev) => Math.min(totalPaymentPages, prev + 1))}
+                          disabled={safePage === totalPaymentPages}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                            safePage === totalPaymentPages
+                              ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-3xs"
+                          }`}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -1556,27 +1759,70 @@ export default function SubscriberDashboard({
       {activeTab === "settings" && (
         <form onSubmit={handleSaveSettings} className="space-y-6">
           
-          {/* Settings Top Card */}
-          <div className="bg-slate-900 text-white rounded-3xl p-6 md:p-8 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-2xl pointer-events-none" />
+          {/* Settings Sub-Tab Navigation */}
+          <div className="flex border-b border-slate-200 pb-px gap-2 select-none">
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab("profile")}
+              className={`pb-3 px-4 text-xs font-black transition-all relative flex items-center gap-2 cursor-pointer ${
+                settingsSubTab === "profile" 
+                  ? "text-indigo-600" 
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
+            >
+              <UserIcon className="w-4 h-4" />
+              <span>Profile Identity</span>
+              {settingsSubTab === "profile" && (
+                <motion.div layoutId="activeSettingsSubTabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+              )}
+            </button>
             
-            <div className="space-y-2 relative z-10">
-              <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest">
-                Subscriber Workspace
-              </span>
-              <h2 className="text-2xl font-black tracking-tight leading-none text-white">Account Settings & Alert Triggers</h2>
-              <p className="text-xs text-slate-350 max-w-xl leading-relaxed">
-                Edit your platform profile name, update your BEP-20 verification wallet, and personalize your SMTP / Telegram alert bot credentials.
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab("telegram")}
+              className={`pb-3 px-4 text-xs font-black transition-all relative flex items-center gap-2 cursor-pointer ${
+                settingsSubTab === "telegram" 
+                  ? "text-indigo-600" 
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              <span>Telegram Incident Alerts</span>
+              {settingsSubTab === "telegram" && (
+                <motion.div layoutId="activeSettingsSubTabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+              )}
+            </button>
 
             <button
-              type="submit"
-              disabled={isSavingSettings}
-              className="relative z-10 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              type="button"
+              onClick={() => setSettingsSubTab("limits")}
+              className={`pb-3 px-4 text-xs font-black transition-all relative flex items-center gap-2 cursor-pointer ${
+                settingsSubTab === "limits" 
+                  ? "text-indigo-600" 
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
             >
-              <Save className="w-4 h-4" />
-              <span>{isSavingSettings ? "Saving Settings..." : "Save All Settings"}</span>
+              <ShieldCheck className="w-4 h-4" />
+              <span>Account Quota & Limits</span>
+              {settingsSubTab === "limits" && (
+                <motion.div layoutId="activeSettingsSubTabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab("security")}
+              className={`pb-3 px-4 text-xs font-black transition-all relative flex items-center gap-2 cursor-pointer ${
+                settingsSubTab === "security" 
+                  ? "text-indigo-600" 
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
+            >
+              <Lock className="w-4 h-4" />
+              <span>Security (2FA OTP)</span>
+              {settingsSubTab === "security" && (
+                <motion.div layoutId="activeSettingsSubTabLine" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+              )}
             </button>
           </div>
 
@@ -1594,20 +1840,25 @@ export default function SubscriberDashboard({
             </div>
           )}
 
-          {/* Settings sections grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            {/* Left side settings box */}
-            <div className="space-y-6">
-              
-              {/* Profile Credentials */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs space-y-4 hover:border-slate-200/60 transition-colors">
-                <h3 className="font-black text-slate-900 text-sm flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <UserIcon className="w-4 h-4 text-indigo-500" />
-                  <span>Profile Identity</span>
-                </h3>
+          <AnimatePresence mode="wait">
+            {settingsSubTab === "profile" && (
+              <motion.div
+                key="profile-subtab"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-6 hover:border-slate-200/60 transition-colors"
+              >
+                <div className="space-y-1">
+                  <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    <UserIcon className="w-4 h-4 text-indigo-500" />
+                    <span>Profile Identity</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Manage your main subscriber name and account verification contact email</p>
+                </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Subscriber Name</label>
                     <input
@@ -1630,76 +1881,39 @@ export default function SubscriberDashboard({
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Settlement Web3 Card */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs space-y-4 hover:border-slate-200/60 transition-colors">
-                <h3 className="font-black text-slate-900 text-sm flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <Smartphone className="w-4 h-4 text-indigo-500" />
-                  <span>Web3 Settlement Address</span>
-                </h3>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">BEP-20 Wallet Address (Binance Smart Chain)</label>
-                  <input
-                    type="text"
-                    value={profileWallet || ""}
-                    onChange={(e) => setProfileWallet(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-800 font-bold"
-                  />
-                  <span className="text-[10px] text-slate-400 block leading-relaxed font-medium">
-                    This wallet address is used as your personal verification anchor to settle subscriptions, receive refunds, and process transactions.
-                  </span>
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingSettings}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isSavingSettings ? "Saving..." : "Save Profile Details"}</span>
+                  </button>
                 </div>
-              </div>
+              </motion.div>
+            )}
 
-              {/* Tier Limits info box */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs space-y-4">
-                <h3 className="font-black text-slate-900 text-sm flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <ShieldCheck className="w-4 h-4 text-indigo-500" />
-                  <span>Account Quota Thresholds</span>
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50">
-                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Current Tier</span>
-                    <span className="text-sm font-black text-indigo-600 uppercase mt-1 block">{user.plan_id}</span>
-                  </div>
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50">
-                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Monitors Quota</span>
-                    <span className="text-sm font-black text-slate-800 mt-1 block">
-                      {currentPlan.max_monitors} monitors
-                    </span>
-                  </div>
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50">
-                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Min Interval Allowed</span>
-                    <span className="text-sm font-black text-slate-800 mt-1 block">
-                      {currentPlan.min_interval_sec}s check
-                    </span>
-                  </div>
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50">
-                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Registered Since</span>
-                    <span className="text-xs font-black text-slate-800 mt-1 block font-mono">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+            {settingsSubTab === "telegram" && (
+              <motion.div
+                key="telegram-subtab"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-6 hover:border-slate-200/60 transition-colors"
+              >
+                <div className="space-y-1">
+                  <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-indigo-500" />
+                    <span>Telegram Dispatch configuration</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Receive live ping notification alerts to handle downtime instantly</p>
                 </div>
-              </div>
-
-            </div>
-
-            {/* Right side settings box */}
-            <div className="space-y-6">
-              
-              {/* Telegram bot alerts instructions & card */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs space-y-5 hover:border-slate-200/60 transition-colors">
-                <h3 className="font-black text-slate-900 text-sm flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <Bell className="w-4 h-4 text-indigo-500" />
-                  <span>Telegram Dispatch configuration</span>
-                </h3>
 
                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4.5 space-y-2.5 text-xs text-indigo-950 font-medium leading-relaxed">
-                  <span className="font-bold flex items-center gap-1">
+                  <span className="font-bold flex items-center gap-1 text-slate-900">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                     <span>How to obtain Telegram Incident Alerts:</span>
                   </span>
@@ -1711,7 +1925,7 @@ export default function SubscriberDashboard({
                   </ol>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Your Telegram Chat ID</label>
                     <input
@@ -1741,11 +1955,270 @@ export default function SubscriberDashboard({
                   </div>
                 </div>
 
-              </div>
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingSettings}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isSavingSettings ? "Saving..." : "Save Telegram Rules"}</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-            </div>
+            {settingsSubTab === "limits" && (
+              <motion.div
+                key="limits-subtab"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-6"
+              >
+                <div className="space-y-1">
+                  <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                    <span>Account Quota Thresholds</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">View active subscription features, limits, and server tracking quotas</p>
+                </div>
 
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-4 border-t border-slate-100">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Current Tier</span>
+                    <span className="text-sm font-black text-indigo-600 uppercase mt-1 block">{user.plan_id}</span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Monitors Quota</span>
+                    <span className="text-sm font-black text-slate-800 mt-1 block">
+                      {currentPlan.max_monitors} monitors
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Min Interval Allowed</span>
+                    <span className="text-sm font-black text-slate-800 mt-1 block">
+                      {currentPlan.min_interval_sec}s check
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Registered Since</span>
+                    <span className="text-xs font-black text-slate-800 mt-1 block font-mono">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Next Renewal / Expiry Date</span>
+                    <span className="text-sm font-black text-indigo-600 mt-1 block font-mono">
+                      {user.plan_id === "free" ? "Lifetime Free" : new Date(new Date(user.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase text-slate-400 font-bold block">Node Security Standing</span>
+                    <span className="text-xs font-black text-emerald-600 mt-1 block uppercase flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active & Secured
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {settingsSubTab === "security" && (
+              <motion.div
+                key="security-subtab"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-6"
+              >
+                {setup2faMethod ? (
+                  <div className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-indigo-500 animate-pulse" />
+                        <span>Confirm 2FA Setup Challenge</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Please verify your {setup2faMethod === "email" ? "Email Address" : "Telegram Thread"} to activate cryogenic protection.
+                      </p>
+                    </div>
+
+                    {/* Simulated Setup OTP banner */}
+                    {simulatedSetupOtp && (
+                      <div className="p-4 bg-slate-50 border border-indigo-100 rounded-2xl space-y-2 select-none animate-pulse">
+                        <div className="flex items-center justify-between text-[10px] text-indigo-600 font-bold uppercase">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                            <span>Simulated Delivery Channel Code</span>
+                          </span>
+                          <span className="bg-indigo-50 px-2 py-0.5 rounded text-[9px] font-black">{setup2faMethod.toUpperCase()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-slate-500">Your secure registration pin:</p>
+                          <p className="text-sm font-black text-slate-900 font-mono tracking-widest bg-white px-2.5 py-1 rounded border border-slate-150">
+                            {simulatedSetupOtp}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {setupOtpError && (
+                      <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-100 px-3 py-2 rounded-xl font-medium">
+                        {setupOtpError}
+                      </p>
+                    )}
+
+                    {setupOtpSuccess && (
+                      <p className="text-[11px] text-indigo-600 bg-indigo-50/50 border border-indigo-100 px-3 py-2 rounded-xl font-medium">
+                        {setupOtpSuccess}
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                        Enter 6-Digit OTP Code
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        value={setup2faOtp}
+                        onChange={(e) => setSetup2faOtp(e.target.value)}
+                        placeholder="••••••"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-center text-sm font-mono tracking-widest text-slate-800 placeholder-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-bold"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSetup2faMethod(null);
+                          setSetup2faOtp("");
+                          setSimulatedSetupOtp(null);
+                          setSetupOtpError("");
+                        }}
+                        className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-850 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                      >
+                        Cancel Setup
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleVerifySetup2fa}
+                        disabled={isVerifyingSetupOtp || !setup2faOtp}
+                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {isVerifyingSetupOtp ? "Verifying..." : "Verify & Enable 2FA"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                        <Fingerprint className="w-4 h-4 text-indigo-500" />
+                        <span>Cryptographic 2FA Security Center</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Enable Two-Factor Authentication (2FA) via Email or Telegram BOT OTP for high-security actions</p>
+                    </div>
+
+                    <div className="space-y-5 pt-4 border-t border-slate-100">
+                      {/* Option 1: Email 2FA */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4.5 bg-slate-50 border border-slate-150 rounded-2xl transition-all hover:bg-slate-100/50">
+                        <div className="space-y-1 max-w-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-slate-900">Email OTP 2FA Protection</span>
+                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
+                              profile2faEmail 
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                                : "bg-slate-100 text-slate-500 border-slate-200"
+                            }`}>
+                              {profile2faEmail ? "ENABLED" : "DISABLED"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-400">
+                            Dispatches a unique 6-digit verification pin to your verified login email (<span className="font-mono text-slate-600 font-bold">{user.email}</span>) whenever you request account adjustments or status logins.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isRequestingSetupOtp}
+                          onClick={() => handleToggle2fa("email", !profile2faEmail)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            profile2faEmail ? "bg-indigo-600" : "bg-slate-300"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                              profile2faEmail ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Option 2: Telegram 2FA */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4.5 bg-slate-50 border border-slate-150 rounded-2xl transition-all hover:bg-slate-100/50">
+                        <div className="space-y-1 max-w-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-slate-900">Telegram Bot OTP 2FA Protection</span>
+                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
+                              profile2faTelegram 
+                                ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
+                                : "bg-slate-100 text-slate-500 border-slate-200"
+                            }`}>
+                              {profile2faTelegram ? "ENABLED" : "DISABLED"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-400">
+                            Dispatches the 6-digit security OTP code directly to your Telegram dispatch thread instantly. Highly secure and completely independent of email systems.
+                          </p>
+                          {!user.telegram_chat_id && (
+                            <span className="text-[10px] text-amber-600 font-bold bg-amber-50 border border-amber-100 px-2 py-0.5 rounded flex items-center gap-1 mt-1">
+                              ⚠️ Note: You must configure a Telegram Chat ID in the "Telegram Incident Alerts" tab to enable this feature.
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={!user.telegram_chat_id || isRequestingSetupOtp}
+                          onClick={() => {
+                            if (user.telegram_chat_id) {
+                              handleToggle2fa("telegram", !profile2faTelegram);
+                            }
+                          }}
+                          className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            !user.telegram_chat_id 
+                              ? "bg-slate-200 cursor-not-allowed opacity-50" 
+                              : profile2faTelegram ? "bg-indigo-600 cursor-pointer" : "bg-slate-300 cursor-pointer"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                              profile2faTelegram ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={isSavingSettings}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isSavingSettings ? "Saving..." : "Save Security Rules"}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </form>
       )}

@@ -54,6 +54,13 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
+  // Login 2FA states
+  const [require2fa, setRequire2fa] = useState(false);
+  const [login2faDeliveryMethod, setLogin2faDeliveryMethod] = useState<"email" | "telegram">("email");
+  const [login2faOtp, setLogin2faOtp] = useState("");
+  const [simulatedLoginOtp, setSimulatedLoginOtp] = useState<string | null>(null);
+  const [isVerifyingLoginOtp, setIsVerifyingLoginOtp] = useState(false);
+
   // Register Form State
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
@@ -204,6 +211,8 @@ export default function App() {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
+    setRequire2fa(false);
+    setSimulatedLoginOtp(null);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -213,6 +222,14 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Login handshake failed.");
+      }
+
+      if (data.require2fa) {
+        setRequire2fa(true);
+        setLogin2faDeliveryMethod(data.deliveryMethod);
+        setSimulatedLoginOtp(data.simulated_otp);
+        setAuthSuccess(`Cryptographic 2FA is active. An OTP code has been sent to your registered ${data.deliveryMethod === "email" ? "Email Inbox" : "Telegram Thread"}.`);
+        return;
       }
 
       const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
@@ -226,6 +243,43 @@ export default function App() {
       }, 50);
     } catch (err: any) {
       setAuthError(err.message || "Cryptographic authentication failed. Verify credentials.");
+    }
+  };
+
+  // Login 2FA Handler
+  const handleLogin2faSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsVerifyingLoginOtp(true);
+    try {
+      const res = await fetch("/api/auth/login-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, otp: login2faOtp })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Invalid 2FA code.");
+      }
+
+      const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
+      const detectedRole = isLocalAdmin ? "admin" : "subscriber";
+      setActiveRole(detectedRole);
+      setIsLoggedIn(true);
+      setRequire2fa(false);
+      setSimulatedLoginOtp(null);
+      setLogin2faOtp("");
+      setAuthSuccess("Two-Factor authentication handshake succeeded! Logged in successfully.");
+      
+      // Load platform metrics synchronously for the newly logged-in account
+      setTimeout(() => {
+        loadPlatformData(true);
+      }, 50);
+    } catch (err: any) {
+      setAuthError(err.message || "Cryptographic 2FA verification failed. Please try again.");
+    } finally {
+      setIsVerifyingLoginOtp(false);
     }
   };
 
@@ -699,77 +753,143 @@ export default function App() {
 
           {/* VIEW: LOGIN PORTAL */}
           {activePage === "login" && (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+            require2fa ? (
+              <form onSubmit={handleLogin2faSubmit} className="space-y-4">
+                {/* Simulated OTP Display Banner */}
+                {simulatedLoginOtp && (
+                  <div className="p-4 bg-slate-950 border-2 border-dashed border-indigo-500/40 rounded-2xl space-y-2 select-none animate-pulse">
+                    <div className="flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
+                      <span className="flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                        <span>Simulated Security 2FA OTP Code</span>
+                      </span>
+                      <span>{login2faDeliveryMethod.toUpperCase()} Channel</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-slate-400">Enter this code to bypass the challenge:</p>
+                      <p className="text-base font-black text-white font-mono tracking-widest bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
+                        {simulatedLoginOtp}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block text-center">
+                      Two-Factor verification code
+                    </label>
+                    <p className="text-[11px] text-slate-500 text-center leading-relaxed mb-2">
+                      Please enter the 6-digit security OTP code dispatched to your registered {login2faDeliveryMethod === "email" ? "Email Address" : "Telegram Bot Chat"}.
+                    </p>
                     <input
-                      type="email"
+                      type="text"
                       required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="subscriber@uptimepro.io or admin@uptimepro.io"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      maxLength={6}
+                      value={login2faOtp}
+                      onChange={(e) => setLogin2faOtp(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-center text-sm text-white font-mono tracking-widest placeholder-slate-700 outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-bold"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Password</label>
+                <button
+                  type="submit"
+                  disabled={isVerifyingLoginOtp}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <span>{isVerifyingLoginOtp ? "Verifying..." : "Verify & Complete Handshake"}</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequire2fa(false);
+                    setSimulatedLoginOtp(null);
+                    setLogin2faOtp("");
+                    setAuthSuccess(null);
+                    setAuthError(null);
+                  }}
+                  className="w-full py-2 bg-slate-950 hover:bg-slate-850 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancel & Go Back
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                      <input
+                        type="email"
+                        required
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        placeholder="subscriber@uptimepro.io or admin@uptimepro.io"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivePage("forgot_password");
+                          setAuthError(null);
+                          setAuthSuccess(null);
+                        }}
+                        className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                      >
+                        Recover Account Access?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                      <input
+                        type="password"
+                        required
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>Authorize & Log In</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+
+                <div className="text-center pt-2">
+                  <span className="text-[11px] text-slate-500">
+                    New operator?{" "}
                     <button
                       type="button"
                       onClick={() => {
-                        setActivePage("forgot_password");
+                        setActivePage("register");
                         setAuthError(null);
                         setAuthSuccess(null);
                       }}
-                      className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                      className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
                     >
-                      Recover Account Access?
+                      Create an account &rarr;
                     </button>
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
-                    <input
-                      type="password"
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </div>
+                  </span>
                 </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <span>Authorize & Log In</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-
-              <div className="text-center pt-2">
-                <span className="text-[11px] text-slate-500">
-                  New operator?{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActivePage("register");
-                      setAuthError(null);
-                      setAuthSuccess(null);
-                    }}
-                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
-                  >
-                    Create an account &rarr;
-                  </button>
-                </span>
-              </div>
-            </form>
+              </form>
+            )
           )}
 
           {/* VIEW: REGISTER PORTAL */}

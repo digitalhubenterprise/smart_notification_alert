@@ -140,7 +140,172 @@ async function startServer() {
         writeDb(db);
       }
 
+      // Check if user has 2FA enabled (Email or Telegram)
+      if (user.two_factor_email || user.two_factor_telegram) {
+        const deliveryMethod = (user.two_factor_telegram && user.telegram_chat_id) ? "telegram" : "email";
+        
+        // Generate secure 6-digit random OTP for 2FA login challenge
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = Date.now() + 5 * 60 * 1000; // 5 mins expiration
+
+        tempOtps.set(user.email.toLowerCase() + "_login2fa", { otp, expires, deliveryMethod });
+
+        const logMessage = `[SECURITY 2FA OTP] Sent 6-digit 2FA login code [${otp}] to ${user.email} via ${deliveryMethod.toUpperCase()}. (Expires in 5 minutes)`;
+        console.log(logMessage);
+        addSystemLog("warn", `Security Audit: Generated login 2FA OTP for ${user.email} via ${deliveryMethod.toUpperCase()}`);
+
+        res.json({
+          success: true,
+          require2fa: true,
+          email: user.email,
+          deliveryMethod,
+          simulated_otp: otp
+        });
+        return;
+      }
+
       addSystemLog("info", `Security Audit: User authenticated successfully via TLS: ${user.email}`);
+      res.json({ success: true, user });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Login 2FA Verification Endpoint
+  app.post("/api/auth/login-2fa", (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        res.status(400).json({ error: "Email and OTP code are required for verification." });
+        return;
+      }
+
+      const lowerEmail = email.toLowerCase().trim();
+      const recordKey = lowerEmail + "_login2fa";
+      const record = tempOtps.get(recordKey);
+
+      if (!record) {
+        res.status(400).json({ error: "No active 2FA verification request found for this email." });
+        return;
+      }
+
+      if (Date.now() > record.expires) {
+        tempOtps.delete(recordKey);
+        res.status(400).json({ error: "The 2FA code has expired. Please log in again to receive a new code." });
+        return;
+      }
+
+      if (record.otp !== String(otp).trim()) {
+        res.status(401).json({ error: "Cryptographic validation failed. Invalid 2FA OTP code." });
+        return;
+      }
+
+      const db = readDb();
+      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+
+      if (!user) {
+        res.status(404).json({ error: "User profile not found." });
+        return;
+      }
+
+      // Clean up verification key
+      tempOtps.delete(recordKey);
+
+      addSystemLog("info", `Security Audit: User completed 2FA challenge and logged in successfully: ${user.email}`);
+      res.json({ success: true, user });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 2FA Setup OTP Request Endpoint
+  app.post("/api/auth/2fa/request-enable", (req, res) => {
+    try {
+      const { delivery_method } = req.body;
+      if (!delivery_method || (delivery_method !== "email" && delivery_method !== "telegram")) {
+        res.status(400).json({ error: "Invalid delivery method requested." });
+        return;
+      }
+
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired. Please log in again." });
+        return;
+      }
+
+      if (delivery_method === "telegram" && !user.telegram_chat_id) {
+        res.status(400).json({ error: "Please configure a Telegram Chat ID in the alerts tab before enabling Telegram 2FA." });
+        return;
+      }
+
+      // Generate secure 6-digit random OTP for setup
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 5 * 60 * 1000; // 5 mins expiration
+
+      const recordKey = user.email.toLowerCase() + "_setup_" + delivery_method;
+      tempOtps.set(recordKey, { otp, expires, deliveryMethod: delivery_method });
+
+      const logMessage = `[SECURITY SETUP 2FA OTP] Sent 6-digit setup code [${otp}] to ${user.email} via ${delivery_method.toUpperCase()} for enabling 2FA. (Expires in 5 minutes)`;
+      console.log(logMessage);
+      addSystemLog("warn", `Security Audit: Generated setup 2FA OTP for ${user.email} via ${delivery_method.toUpperCase()}`);
+
+      res.json({
+        success: true,
+        message: `A security setup OTP code has been sent to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`,
+        simulated_otp: otp
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 2FA Setup OTP Verify Endpoint
+  app.post("/api/auth/2fa/verify-enable", (req, res) => {
+    try {
+      const { delivery_method, otp } = req.body;
+      if (!delivery_method || !otp) {
+        res.status(400).json({ error: "Delivery method and OTP are required for verification." });
+        return;
+      }
+
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired. Please log in again." });
+        return;
+      }
+
+      const recordKey = user.email.toLowerCase() + "_setup_" + delivery_method;
+      const record = tempOtps.get(recordKey);
+
+      if (!record) {
+        res.status(400).json({ error: "No active 2FA setup request found for this channel." });
+        return;
+      }
+
+      if (Date.now() > record.expires) {
+        tempOtps.delete(recordKey);
+        res.status(400).json({ error: "The verification code has expired. Please request a new one." });
+        return;
+      }
+
+      if (record.otp !== String(otp).trim()) {
+        res.status(400).json({ error: "Cryptographic verification failed. Invalid OTP code entered." });
+        return;
+      }
+
+      // If correct, enable the security feature
+      if (delivery_method === "email") {
+        user.two_factor_email = true;
+      } else if (delivery_method === "telegram") {
+        user.two_factor_telegram = true;
+      }
+
+      writeDb(db);
+      tempOtps.delete(recordKey);
+
+      addSystemLog("info", `Security Audit: User successfully enabled 2FA via ${delivery_method.toUpperCase()}: ${user.email}`);
       res.json({ success: true, user });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -259,7 +424,7 @@ async function startServer() {
   // Edit subscriber profile
   app.put("/api/user", (req, res) => {
     try {
-      const { name, email, wallet_address, telegram_chat_id } = req.body;
+      const { name, email, wallet_address, telegram_chat_id, two_factor_email, two_factor_telegram } = req.body;
       const db = readDb();
       const user = getActiveUser(req, db);
       if (!user) {
@@ -270,6 +435,8 @@ async function startServer() {
       if (email) user.email = email;
       if (wallet_address) user.wallet_address = wallet_address;
       if (telegram_chat_id !== undefined) user.telegram_chat_id = telegram_chat_id.trim();
+      if (two_factor_email !== undefined) user.two_factor_email = !!two_factor_email;
+      if (two_factor_telegram !== undefined) user.two_factor_telegram = !!two_factor_telegram;
       writeDb(db);
       res.json(user);
     } catch (err: any) {

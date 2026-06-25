@@ -10,6 +10,8 @@ export interface User {
   plan_id: "free" | "pro" | "enterprise";
   createdAt: string;
   telegram_chat_id?: string;
+  two_factor_email?: boolean;
+  two_factor_telegram?: boolean;
 }
 
 export interface Monitor {
