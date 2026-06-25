@@ -39,7 +39,7 @@ interface SubscriberDashboardProps {
   user: User;
   monitors: Monitor[];
   payments: Payment[];
-  onRefreshData: () => void;
+  onRefreshData: (newEmail?: string) => void;
   onCreditWallet: (amount: number) => void;
   activeTab?: "monitors" | "wallet" | "billing" | "history" | "settings";
   plans?: SubscriptionPlan[];
@@ -195,7 +195,7 @@ export default function SubscriberDashboard({
       }
 
       setSettingsSuccess("Your account settings and notification preferences have been saved successfully!");
-      onRefreshData(); // Refresh global user state
+      onRefreshData(profileEmail); // Refresh global user state with the updated email
     } catch (err: any) {
       setSettingsError(err.message || "An unexpected error occurred while saving.");
     } finally {

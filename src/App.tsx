@@ -148,6 +148,18 @@ export default function App() {
         fetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, { headers })
       ]);
 
+      if (userRes.status === 401) {
+        setIsLoggedIn(false);
+        setActivePage("login");
+        localStorage.removeItem("uptimepro_isLoggedIn");
+        localStorage.removeItem("uptimepro_activePage");
+        localStorage.removeItem("uptimepro_loginEmail");
+        localStorage.removeItem("uptimepro_loginPassword");
+        setUser(null);
+        setAuthError("Your session expired or your profile could not be found. Please register or log in again.");
+        return;
+      }
+
       if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !allUsersRes.ok || !plansRes.ok) {
         throw new Error("Failed to load server data. Server might be initializing...");
       }
@@ -1176,7 +1188,15 @@ export default function App() {
                     user={user}
                     monitors={monitors}
                     payments={payments}
-                    onRefreshData={() => loadPlatformData(true)}
+                    onRefreshData={(newEmail?: string) => {
+                      if (newEmail) {
+                        setLoginEmail(newEmail);
+                        localStorage.setItem("uptimepro_loginEmail", newEmail);
+                        loadPlatformData(true, newEmail);
+                      } else {
+                        loadPlatformData(true);
+                      }
+                    }}
                     activeTab={subscriberTab}
                     plans={plans}
                     onCreditWallet={(amount) => {

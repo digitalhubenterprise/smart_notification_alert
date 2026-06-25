@@ -43,8 +43,9 @@ async function startServer() {
     if (emailHeader) {
       const matched = db.users.find((u: any) => u.email.toLowerCase() === String(emailHeader).toLowerCase());
       if (matched) return matched;
+      return null;
     }
-    return db.users[0];
+    return null;
   };
 
   // 2. API Routes
@@ -245,6 +246,10 @@ async function startServer() {
     try {
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found. Please log in again." });
+        return;
+      }
       res.json(user);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -257,6 +262,10 @@ async function startServer() {
       const { name, email, wallet_address, telegram_chat_id } = req.body;
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found. Please log in again." });
+        return;
+      }
       if (name) user.name = name;
       if (email) user.email = email;
       if (wallet_address) user.wallet_address = wallet_address;
@@ -287,6 +296,10 @@ async function startServer() {
       }
 
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       const cost = selectedPlan.price;
 
       if (user.balance < cost) {
@@ -317,6 +330,10 @@ async function startServer() {
 
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       user.balance += creditAmount;
       writeDb(db);
 
@@ -332,6 +349,10 @@ async function startServer() {
     try {
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       const userMonitors = db.monitors.filter((m) => m.user_id === user.id);
 
       // Calculate uptime statistics for each monitor based on logs
@@ -380,6 +401,10 @@ async function startServer() {
 
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       const monitors = db.monitors.filter((m) => m.user_id === user.id);
 
       // Validate plan limits dynamically
@@ -441,6 +466,10 @@ async function startServer() {
 
       const monitor = db.monitors[idx];
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
 
       // Validate intervals based on plan dynamically
       if (interval_sec) {
@@ -619,6 +648,10 @@ async function startServer() {
 
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       const config = db.config;
 
       // Check if hash is already processed
@@ -685,6 +718,10 @@ async function startServer() {
     try {
       const db = readDb();
       const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
       const userMonitors = db.monitors.filter((m) => m.user_id === user.id);
       const userMonitorIds = new Set(userMonitors.map((m) => m.id));
       const filteredLogs = db.logs.filter((l) => userMonitorIds.has(l.monitor_id));
