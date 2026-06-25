@@ -53,6 +53,19 @@ export interface AlertConfig {
   smtp_from: string;
   alerts_enabled: boolean;
   receiver_wallet_address: string; // BEP-20 receiving wallet address
+  site_title?: string;
+  site_seo_desc?: string;
+  site_seo_keywords?: string;
+  google_analytics_id?: string;
+  sitemap_enabled?: boolean;
+  site_brand_email?: string;
+  twofa_enabled?: boolean;
+  twofa_secret?: string;
+  twofa_enforced?: boolean;
+  twofa_email_enabled?: boolean;
+  twofa_telegram_enabled?: boolean;
+  twofa_authenticator_enabled?: boolean;
+  twofa_preferred_method?: string;
 }
 
 export interface Payment {
@@ -154,6 +167,13 @@ const DEFAULT_CONFIG: AlertConfig = {
   smtp_from: "alerts@uptimepro.io",
   alerts_enabled: true,
   receiver_wallet_address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", // Demo BSC address
+  twofa_enabled: false,
+  twofa_secret: "JBSWY3DPEHPK3PXP",
+  twofa_enforced: false,
+  twofa_email_enabled: true,
+  twofa_telegram_enabled: false,
+  twofa_authenticator_enabled: true,
+  twofa_preferred_method: "authenticator",
 };
 
 const INITIAL_DB: DatabaseSchema = {
@@ -315,13 +335,17 @@ function ensureDbExists() {
 
 let dbCache: DatabaseSchema | null = null;
 let pgPool: pg.Pool | null = null;
+let isSaving = false;
+let needsSave = false;
 
 export function getPgPool(): pg.Pool | null {
   if (!pgPool && process.env.DATABASE_URL) {
     try {
       pgPool = new pg.Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes("sslmode=") ? undefined : { rejectUnauthorized: false }
+        ssl: process.env.DATABASE_URL.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+        max: 20, // Support more connections for 500+ users
+        idleTimeoutMillis: 30000
       });
       console.log("[PostgreSQL] Pool initialized.");
     } catch (err) {
@@ -450,23 +474,41 @@ export function readDb(): DatabaseSchema {
 
 export function writeDb(db: DatabaseSchema) {
   dbCache = db;
+  needsSave = true;
+  scheduleSave();
+}
+
+function scheduleSave() {
+  if (isSaving || !needsSave) return;
+  isSaving = true;
+  needsSave = false;
+
+  ensureDbExists();
+  
+  // Create a deep copy of the cache to avoid mutation during stringify
+  const dataToSave = JSON.stringify(dbCache, null, 2);
   
   const pool = getPgPool();
-  if (pool) {
-    pool.query(
-      "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP",
-      [JSON.stringify(db)]
-    ).catch(err => {
-      console.error("[PostgreSQL] Background save failed:", err);
+  const pgPromise = pool 
+    ? pool.query(
+        "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP",
+        [dataToSave]
+      ).catch(err => console.error("[PostgreSQL] Background save failed:", err))
+    : Promise.resolve();
+
+  const fsPromise = new Promise<void>((resolve) => {
+    fs.writeFile(DB_PATH, dataToSave, "utf8", (err) => {
+      if (err) console.error("Local file write failed:", err);
+      resolve();
     });
-  }
-  
-  try {
-    ensureDbExists();
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
-  } catch (err) {
-    console.error("Local file write failed:", err);
-  }
+  });
+
+  Promise.all([pgPromise, fsPromise]).then(() => {
+    isSaving = false;
+    if (needsSave) {
+      setTimeout(scheduleSave, 500); // 500ms debounce
+    }
+  });
 }
 
 // Log helper
@@ -479,8 +521,8 @@ export function addSystemLog(level: "info" | "warn" | "error", message: string) 
     timestamp: new Date().toISOString(),
   };
   db.systemLogs.unshift(newLog);
-  if (db.systemLogs.length > 100) {
-    db.systemLogs = db.systemLogs.slice(0, 100);
+  if (db.systemLogs.length > 5000) {
+    db.systemLogs = db.systemLogs.slice(0, 5000);
   }
   writeDb(db);
 }

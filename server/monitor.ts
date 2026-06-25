@@ -223,19 +223,23 @@ async function checkMonitor(monitor: Monitor): Promise<void> {
 
     db.logs.unshift(newLog);
 
-    // Limit historical logs to 1000 items to prevent database bloat
-    if (db.logs.length > 1000) {
-      db.logs = db.logs.slice(0, 1000);
+    // Limit historical logs to 50000 items to prevent database bloat but support 500+ users
+    if (db.logs.length > 50000) {
+      db.logs = db.logs.slice(0, 50000);
     }
 
     writeDb(db);
   }
 }
 
+let engineIsRunning = false;
+
 /**
  * Main loop that runs periodically
  */
 async function runEngineTick() {
+  if (!engineIsRunning) return;
+  
   try {
     const db = readDb();
     const monitors = db.monitors;
@@ -253,21 +257,32 @@ async function runEngineTick() {
       writeDb(db);
     }
 
-    for (const monitor of monitors) {
-      // Calculate if monitor is due for a check
-      // For simple execution, we run checks if the difference since last check >= interval
+    const dueMonitors = monitors.filter((monitor) => {
       const lastCheckTime = monitor.last_check ? new Date(monitor.last_check).getTime() : 0;
       const intervalMs = monitor.interval_sec * 1000;
+      return now - lastCheckTime >= intervalMs;
+    });
 
-      if (now - lastCheckTime >= intervalMs) {
-        // Execute concurrent checks in background asynchronously (non-blocking)
-        checkMonitor(monitor).catch((err) => {
-          console.error(`Uncaught error checking monitor ${monitor.id}:`, err);
-        });
-      }
+    // Chunk size of 100 for stable 500+ users concurrency
+    const chunkSize = 100;
+    for (let i = 0; i < dueMonitors.length; i += chunkSize) {
+      if (!engineIsRunning) break;
+      const chunk = dueMonitors.slice(i, i + chunkSize);
+      
+      // Execute chunk concurrently
+      await Promise.allSettled(chunk.map(m => checkMonitor(m)));
+      
+      // Yield slightly to not block the Node.js event loop
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
+
   } catch (err: any) {
     console.error("Error in monitor engine tick:", err);
+  } finally {
+    if (engineIsRunning) {
+      // Schedule the next tick
+      monitorIntervalRef = setTimeout(runEngineTick, 5000);
+    }
   }
 }
 
@@ -275,17 +290,15 @@ async function runEngineTick() {
  * Initializes and starts the background monitoring engine
  */
 export function startMonitorEngine() {
+  if (engineIsRunning) return;
+  engineIsRunning = true;
+
   if (monitorIntervalRef) {
-    clearInterval(monitorIntervalRef);
+    clearTimeout(monitorIntervalRef as NodeJS.Timeout);
   }
 
   addSystemLog("info", "Starting UptimePro Monitoring Engine worker (interval: 5s)...");
   
-  // Run every 5 seconds to catch monitors due for checking
-  monitorIntervalRef = setInterval(() => {
-    runEngineTick();
-  }, 5000);
-
   // Run immediately once on startup
   runEngineTick();
 }
@@ -294,8 +307,9 @@ export function startMonitorEngine() {
  * Stops the monitoring engine
  */
 export function stopMonitorEngine() {
+  engineIsRunning = false;
   if (monitorIntervalRef) {
-    clearInterval(monitorIntervalRef);
+    clearTimeout(monitorIntervalRef as NodeJS.Timeout);
     monitorIntervalRef = null;
     addSystemLog("info", "UptimePro Monitoring Engine stopped.");
   }

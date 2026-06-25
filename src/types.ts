@@ -51,6 +51,19 @@ export interface AlertConfig {
   smtp_from: string;
   alerts_enabled: boolean;
   receiver_wallet_address: string;
+  site_title?: string;
+  site_seo_desc?: string;
+  site_seo_keywords?: string;
+  google_analytics_id?: string;
+  sitemap_enabled?: boolean;
+  site_brand_email?: string;
+  twofa_enabled?: boolean;
+  twofa_secret?: string;
+  twofa_enforced?: boolean;
+  twofa_email_enabled?: boolean;
+  twofa_telegram_enabled?: boolean;
+  twofa_authenticator_enabled?: boolean;
+  twofa_preferred_method?: string;
 }
 
 export interface Payment {

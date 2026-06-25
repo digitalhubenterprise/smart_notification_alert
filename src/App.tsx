@@ -25,7 +25,8 @@ import {
   Mail,
   Smartphone,
   Key,
-  Database
+  Database,
+  LayoutDashboard
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SubscriberDashboard from "./components/SubscriberDashboard.tsx";
@@ -88,8 +89,8 @@ export default function App() {
   const [subscriberTab, setSubscriberTab] = useState<"monitors" | "wallet" | "billing" | "history" | "settings">(() => {
     return (localStorage.getItem("uptimepro_subscriberTab") as any) || "monitors";
   });
-  const [adminTab, setAdminTab] = useState<"settings" | "subscribers" | "logs" | "plans" | "backups">(() => {
-    return (localStorage.getItem("uptimepro_adminTab") as any) || "settings";
+  const [adminTab, setAdminTab] = useState<"dashboard" | "settings" | "subscribers" | "logs" | "plans" | "backups">(() => {
+    return (localStorage.getItem("uptimepro_adminTab") as any) || "dashboard";
   });
 
   // Mobile Sidebar Slide-Out Toggle State
@@ -235,6 +236,9 @@ export default function App() {
       const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
       const detectedRole = isLocalAdmin ? "admin" : "subscriber";
       setActiveRole(detectedRole);
+      if (detectedRole === "admin") {
+        setAdminTab("dashboard");
+      }
       setIsLoggedIn(true);
       
       // Load platform metrics synchronously for the newly logged-in account
@@ -266,6 +270,9 @@ export default function App() {
       const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
       const detectedRole = isLocalAdmin ? "admin" : "subscriber";
       setActiveRole(detectedRole);
+      if (detectedRole === "admin") {
+        setAdminTab("dashboard");
+      }
       setIsLoggedIn(true);
       setRequire2fa(false);
       setSimulatedLoginOtp(null);
@@ -512,6 +519,21 @@ export default function App() {
             <div className="space-y-1">
               <button
                 onClick={() => {
+                  setAdminTab("dashboard");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-all cursor-pointer ${
+                  adminTab === "dashboard"
+                    ? "bg-slate-850 text-white border-l-4 border-indigo-500 font-bold"
+                    : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+                }`}
+              >
+                <LayoutDashboard className={`w-4 h-4 ${adminTab === "dashboard" ? "text-indigo-500" : ""}`} />
+                <span>Super Admin Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => {
                   setAdminTab("settings");
                   setIsSidebarOpen(false);
                 }}
@@ -537,7 +559,7 @@ export default function App() {
                 }`}
               >
                 <Users className={`w-4 h-4 ${adminTab === "subscribers" ? "text-indigo-500" : ""}`} />
-                <span>Subscriber Pool</span>
+                <span>Subscriber</span>
               </button>
 
               <button
@@ -780,7 +802,7 @@ export default function App() {
                       Two-Factor verification code
                     </label>
                     <p className="text-[11px] text-slate-500 text-center leading-relaxed mb-2">
-                      Please enter the 6-digit security OTP code dispatched to your registered {login2faDeliveryMethod === "email" ? "Email Address" : "Telegram Bot Chat"}.
+                      Please enter the 6-digit security OTP code dispatched to your registered {login2faDeliveryMethod === "authenticator" ? "Google Authenticator Client App" : login2faDeliveryMethod === "email" ? "Email Inbox" : "Telegram Bot Chat"}.
                     </p>
                     <input
                       type="text"
@@ -1240,7 +1262,7 @@ export default function App() {
                 <span className="font-bold text-slate-800 text-sm block leading-none capitalize">
                   {activeRole === "subscriber" 
                     ? (subscriberTab === "monitors" ? "Monitors & Latency metrics" : subscriberTab === "wallet" ? "Secure Wallet & Deposits" : subscriberTab === "billing" ? "Billing & blockchain deposits" : subscriberTab === "history" ? "Monitor execution logs & triggered alerts" : "Configure notification channels & preferences")
-                    : (adminTab === "settings" ? "Global Settings & Gateways" : adminTab === "subscribers" ? "Subscriber directory" : adminTab === "plans" ? "Manage Subscription Plans & Pricing" : adminTab === "backups" ? "Database & Auto Cloud Backups" : "System concurrent logs")
+                    : (adminTab === "dashboard" ? "System Core Overview & Metrics" : adminTab === "settings" ? "Global Settings & Gateways" : adminTab === "subscribers" ? "Subscriber directory" : adminTab === "plans" ? "Manage Subscription Plans & Pricing" : adminTab === "backups" ? "Database & Auto Cloud Backups" : "System concurrent logs")
                   }
                 </span>
               </div>
