@@ -3,7 +3,6 @@ import path from "path";
 import dns from "dns";
 import crypto from "crypto";
 import Client from "ssh2-sftp-client";
-import { ZipArchive } from "archiver";
 import { PassThrough } from "stream";
 import cron from "node-cron";
 import fs from "fs";
@@ -64,7 +63,7 @@ async function startServer() {
     (req as any).user = user;
 
     // Admin endpoint protection
-    const isAdminUser = user.email.toLowerCase().includes("admin") || user.id === "user-admin";
+    const isAdminUser = user.email.toLowerCase() === "admin@uptimepro.io" || user.id === "user-admin";
     if (req.path.startsWith("/admin/") || (req.path.startsWith("/config") && req.method !== "GET")) {
        if (!isAdminUser) {
            return res.status(403).json({ error: "Forbidden. Admin access required." });
@@ -203,7 +202,7 @@ async function startServer() {
       }
 
       // Check if user is Super Admin and has global 2FA enabled/enforced
-      const isAdminUser = lowerEmail.includes("admin") || user.id === "user-admin";
+      const isAdminUser = lowerEmail === "admin@uptimepro.io" || user.id === "user-admin";
       const config = db.config;
 
       if (isAdminUser && (config.twofa_enabled || config.twofa_enforced)) {
@@ -292,7 +291,7 @@ async function startServer() {
         return;
       }
 
-      const isAdminUser = lowerEmail.includes("admin") || recordKey.startsWith("admin");
+      const isAdminUser = lowerEmail === "admin@uptimepro.io" || recordKey.startsWith("admin");
       let isCodeValid = record.otp === String(otp).trim();
       
       if (!isCodeValid && isAdminUser && record.deliveryMethod === "authenticator") {
@@ -1521,6 +1520,7 @@ async function startServer() {
         }
 
         const remoteFile = `${dirPath}/full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+        const { ZipArchive } = await import('archiver');
         const archive = new ZipArchive({ zlib: { level: 9 } });
         const passThrough = new PassThrough();
         const uploadPromise = sftp.put(passThrough, remoteFile);
@@ -1771,7 +1771,7 @@ async function startServer() {
   });
 
   // 7. Download backup snapshot
-  app.get("/api/admin/backup/download/:id", (req, res) => {
+  app.get("/api/admin/backup/download/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const db = readDb();
@@ -1788,6 +1788,7 @@ async function startServer() {
       res.setHeader("Content-Disposition", `attachment; filename="${filename}.zip"`);
       res.setHeader("Content-Type", "application/zip");
       
+      const { ZipArchive } = await import('archiver');
       const archive = new ZipArchive({ zlib: { level: 9 } });
 
       archive.on('error', function(err) {
@@ -1894,6 +1895,7 @@ async function startServer() {
 
       // create new backup
       const remoteFile = `${dirPath}/auto_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+      const { ZipArchive } = await import('archiver');
       const archive = new ZipArchive({ zlib: { level: 9 } });
       const passThrough = new PassThrough();
       const uploadPromise = sftp.put(passThrough, remoteFile);
