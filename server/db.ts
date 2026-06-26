@@ -121,6 +121,7 @@ export interface DatabaseSchema {
   systemLogs: SystemLog[];
   plans: SubscriptionPlan[];
   backupSettings?: BackupSettings;
+  cyberPanelConfig?: any;
   backupSnapshots?: BackupSnapshot[];
 }
 

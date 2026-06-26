@@ -3,6 +3,10 @@ import path from "path";
 import dns from "dns";
 import crypto from "crypto";
 import Client from "ssh2-sftp-client";
+import { ZipArchive } from "archiver";
+import { PassThrough } from "stream";
+import cron from "node-cron";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
@@ -1448,7 +1452,6 @@ async function startServer() {
           readyTimeout: 10000
         });
 
-        const DB_PATH = path.join(process.cwd(), "data", "uptime_db.json");
         const userPath = config.remotePath || "cpbackups/smart_uptime_notification";
         const dirPath = userPath.startsWith('/') ? userPath : `./${userPath}`;
         
@@ -1458,9 +1461,23 @@ async function startServer() {
           // Ignore error if directory already exists
         }
 
-        const remoteFile = `${dirPath}/full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        const remoteFile = `${dirPath}/full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
         
-        await sftp.put(DB_PATH, remoteFile);
+        const archive = new ZipArchive({ zlib: { level: 9 } });
+        const passThrough = new PassThrough();
+        
+        const uploadPromise = sftp.put(passThrough, remoteFile);
+        
+        // zip the whole directory, excluding node_modules, dist, .git
+        archive.glob('**/*', {
+            cwd: process.cwd(),
+            ignore: ['node_modules/**', 'dist/**', '.git/**', '.next/**', 'coverage/**']
+        });
+        
+        archive.pipe(passThrough);
+        await archive.finalize();
+        await uploadPromise;
+        
         await sftp.end();
 
         // Create a local snapshot to show in the UI as well
@@ -1706,11 +1723,29 @@ async function startServer() {
         return res.status(404).json({ error: "Snapshot not found" });
       }
 
-      res.setHeader("Content-Disposition", `attachment; filename="backup_${snapshot.name.replace(/[^a-zA-Z0-9_-]/g, "_")}_${snapshot.timestamp.replace(/[:.]/g, "-")}.json"`);
-      res.setHeader("Content-Type", "application/json");
-      res.send(snapshot.data);
+      const safeName = snapshot.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const safeTime = snapshot.timestamp.replace(/[:.]/g, "-");
+      const filename = `backup_${safeName}_${safeTime}`;
+
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}.zip"`);
+      res.setHeader("Content-Type", "application/zip");
+      
+      const archive = new ZipArchive({ zlib: { level: 9 } });
+
+      archive.on('error', function(err) {
+        if (!res.headersSent) {
+          res.status(500).json({error: err.message});
+        }
+      });
+
+      archive.pipe(res);
+      archive.append(snapshot.data, { name: `${filename}.json` });
+      archive.finalize();
+
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: err.message });
+      }
     }
   });
 
@@ -1767,6 +1802,88 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Setup Auto Backup Cron (Every 12 hours)
+  cron.schedule("0 */12 * * *", async () => {
+    try {
+      const db = readDb();
+      if (!db.cyberPanelConfig || !db.cyberPanelConfig.enabled || !db.cyberPanelConfig.hostIp) {
+        return; // Auto backup only if CyberPanel is configured and enabled
+      }
+      const config = db.cyberPanelConfig;
+
+      const sftp = new Client();
+      sftp.on('error', () => { /* ignore */ });
+      await sftp.connect({
+        host: config.hostIp,
+        port: config.port || 22,
+        username: config.username,
+        privateKey: config.sshKey,
+        readyTimeout: 10000
+      });
+
+      const userPath = config.remotePath || "cpbackups/smart_uptime_notification";
+      const dirPath = userPath.startsWith('/') ? userPath : `./${userPath}`;
+      try {
+        await sftp.mkdir(dirPath, true);
+      } catch (e) { }
+
+      // Clean up old backups to keep max 14 (7 days * 2 backups)
+      const list = await sftp.list(dirPath);
+      const autoBackups = list
+        .filter(f => f.name.startsWith('auto_backup_'))
+        .sort((a, b) => b.modifyTime - a.modifyTime); // newest first
+
+      // create new backup
+      const remoteFile = `${dirPath}/auto_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+      const archive = new ZipArchive({ zlib: { level: 9 } });
+      const passThrough = new PassThrough();
+      const uploadPromise = sftp.put(passThrough, remoteFile);
+      
+      archive.glob('**/*', {
+          cwd: process.cwd(),
+          ignore: ['node_modules/**', 'dist/**', '.git/**', '.next/**', 'coverage/**']
+      });
+      archive.pipe(passThrough);
+      await archive.finalize();
+      await uploadPromise;
+
+      // if success, manage old backups: delete older than 13
+      if (autoBackups.length >= 14) {
+        const toDelete = autoBackups.slice(13); // keep only latest 13 + 1 new = 14
+        for (const oldFile of toDelete) {
+          await sftp.delete(`${dirPath}/${oldFile.name}`).catch(() => {});
+        }
+      }
+      
+      await sftp.end();
+      addSystemLog("info", `Auto Backup successful. Kept last 14 backups (7 days).`);
+
+      // Update db to add snapshot locally
+      const freshDb = readDb();
+      const dbString = JSON.stringify(freshDb);
+      const sizeBytes = Buffer.byteLength(dbString, "utf8");
+      if (!freshDb.backupSnapshots) freshDb.backupSnapshots = [];
+      freshDb.backupSnapshots.unshift({
+        id: `backup-${Date.now()}`,
+        name: `Auto Backup (CyberPanel)`,
+        timestamp: new Date().toISOString(),
+        sizeBytes,
+        data: dbString
+      });
+      
+      // Cleanup old snapshots locally (keep max 14 auto backups)
+      const autoSnaps = freshDb.backupSnapshots.filter(s => s.name.startsWith("Auto Backup"));
+      if (autoSnaps.length > 14) {
+         const snapsToDelete = autoSnaps.slice(14).map(s => s.id);
+         freshDb.backupSnapshots = freshDb.backupSnapshots.filter(s => !snapsToDelete.includes(s.id));
+      }
+      writeDb(freshDb);
+
+    } catch (err: any) {
+      addSystemLog("error", `Auto Backup failed: ${err.message}`);
+    }
+  });
 
   // 4. Listen on PORT 3000
   app.listen(PORT, "0.0.0.0", () => {
