@@ -36,6 +36,50 @@ async function startServer() {
   // JSON parsing middleware
   app.use(express.json());
 
+  // Security Middleware
+  app.use("/api", (req, res, next) => {
+    if (req.path.startsWith("/auth/")) return next();
+    
+    const cookies = req.headers.cookie;
+    let token = null;
+    if (cookies) {
+      const match = cookies.match(/uptimepro_session=([^;]+)/);
+      if (match) token = match[1];
+    }
+    
+    if (!token && req.headers["x-auth-token"]) {
+      token = req.headers["x-auth-token"];
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized. Missing session token. Please log in again." });
+    }
+
+    const db = readDb();
+    const user = db.users.find((u: any) => u.apiToken === token);
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized. Invalid session token." });
+    }
+
+    (req as any).user = user;
+
+    // Admin endpoint protection
+    const isAdminUser = user.email.toLowerCase().includes("admin") || user.id === "user-admin";
+    if (req.path.startsWith("/admin/") || (req.path.startsWith("/config") && req.method !== "GET")) {
+       if (!isAdminUser) {
+           return res.status(403).json({ error: "Forbidden. Admin access required." });
+       }
+    }
+
+    // Security: Prevent accessing other users' data
+    const requestedEmail = req.query.email || req.headers["x-user-email"] || req.body?.email;
+    if (requestedEmail && requestedEmail !== user.email && !isAdminUser) {
+        return res.status(403).json({ error: "Forbidden. Cannot access other users' data." });
+    }
+
+    next();
+  });
+
   // Initialize DB first
   await initializeDb();
 
@@ -54,6 +98,13 @@ async function startServer() {
   };
 
   // 2. API Routes
+
+  function issueSession(user: any, res: any, db: any) {
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    user.apiToken = token;
+    writeDb(db);
+    res.setHeader('Set-Cookie', 'uptimepro_session=' + token + '; HttpOnly; SameSite=Lax; Path=/');
+  }
 
   // Secure Cryptographic Authentication Endpoints
 
@@ -109,6 +160,12 @@ async function startServer() {
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  // Logout Endpoint
+  app.post("/api/auth/logout", (req, res) => {
+    res.setHeader('Set-Cookie', 'uptimepro_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+    res.json({ success: true });
   });
 
   // Login / Challenge Verification Endpoint
@@ -204,6 +261,7 @@ async function startServer() {
       }
 
       addSystemLog("info", `Security Audit: User authenticated successfully via TLS: ${user.email}`);
+      issueSession(user, res, db);
       res.json({ success: true, user });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -259,6 +317,7 @@ async function startServer() {
       tempOtps.delete(recordKey);
 
       addSystemLog("info", `Security Audit: User completed 2FA challenge and logged in successfully: ${user.email}`);
+      issueSession(user, res, db);
       res.json({ success: true, user });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

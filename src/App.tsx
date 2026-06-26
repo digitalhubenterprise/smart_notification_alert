@@ -652,6 +652,7 @@ export default function App() {
             localStorage.removeItem("uptimepro_activeRole");
             localStorage.removeItem("uptimepro_subscriberTab");
             localStorage.removeItem("uptimepro_adminTab");
+            fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
           }}
           className="w-full px-3 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-rose-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-rose-950 hover:border-rose-900/50"
         >
