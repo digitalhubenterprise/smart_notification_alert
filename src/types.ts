@@ -110,6 +110,14 @@ export interface BackupSettings {
   lastBackupMessage?: string;
 }
 
+export interface CyberPanelConfig {
+  enabled: boolean;
+  hostIp: string;
+  username: string;
+  port: number;
+  sshKey: string; // SSH Key block/content
+}
+
 export interface DatabaseSchema {
   users: User[];
   monitors: Monitor[];
@@ -120,4 +128,5 @@ export interface DatabaseSchema {
   plans: SubscriptionPlan[];
   backupSettings?: BackupSettings;
   backupSnapshots?: BackupSnapshot[];
+  cyberPanelConfig?: CyberPanelConfig;
 }

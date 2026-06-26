@@ -30,9 +30,21 @@ export default function AdminBackupsTab({
     lastBackupStatus?: "success" | "failed" | "pending";
     lastBackupMessage?: string;
   }>({ enabled: false, cloudUrl: "", intervalHours: 24 });
+  const [cyberPanelConfig, setCyberPanelConfig] = useState<{
+    enabled: boolean;
+    hostIp: string;
+    username: string;
+    port: number;
+    sshKey: string;
+    remotePath: string;
+  }>({ enabled: false, hostIp: "", username: "", port: 22, sshKey: "", remotePath: "cpbackups/smart_uptime_notification" });
   const [backupSnapshots, setBackupSnapshots] = useState<any[]>([]);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [isSavingBackupSettings, setIsSavingBackupSettings] = useState(false);
+  const [isSavingCyberPanel, setIsSavingCyberPanel] = useState(false);
+  const [isTestingCyberPanel, setIsTestingCyberPanel] = useState(false);
+  const [isBackingUpCyberPanel, setIsBackingUpCyberPanel] = useState<"database" | "full" | null>(null);
+  const [cyberPanelDirectories, setCyberPanelDirectories] = useState<any[]>([]);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [isTestingCloud, setIsTestingCloud] = useState(false);
   const [newBackupName, setNewBackupName] = useState("");
@@ -45,6 +57,7 @@ export default function AdminBackupsTab({
       if (res.ok) {
         const data = await res.json();
         setBackupSettings(data.backupSettings);
+        setCyberPanelConfig(data.cyberPanelConfig || { enabled: false, hostIp: "", username: "", port: 22, sshKey: "", remotePath: "cpbackups/smart_uptime_notification" });
         setBackupSnapshots(data.backupSnapshots || []);
       }
     } catch (err) {
@@ -81,6 +94,91 @@ export default function AdminBackupsTab({
       onError(err.message || "Network error occurred.");
     } finally {
       setIsSavingBackupSettings(false);
+    }
+  };
+
+  const handleSaveCyberPanel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    onSuccess("");
+    onError("");
+    setIsSavingCyberPanel(true);
+    try {
+      const res = await fetch("/api/admin/backup/cyberpanel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cyberPanelConfig)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCyberPanelConfig(data.cyberPanelConfig);
+        onSuccess("CyberPanel credentials saved successfully.");
+      } else {
+        const data = await res.json();
+        onError(data.error || "Failed to save CyberPanel configuration.");
+      }
+    } catch (err: any) {
+      onError(err.message || "Network error occurred.");
+    } finally {
+      setIsSavingCyberPanel(false);
+    }
+  };
+
+  const handleTestCyberPanel = async () => {
+    onSuccess("");
+    onError("");
+    setIsTestingCyberPanel(true);
+    setCyberPanelDirectories([]);
+    try {
+      const res = await fetch("/api/admin/backup/cyberpanel/test", {
+        method: "POST",
+      });
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (res.ok) {
+          onSuccess(data.message || "CyberPanel connection successful!");
+          if (data.directories) {
+            setCyberPanelDirectories(data.directories);
+          }
+        } else {
+          onError(data.error || "Failed to connect to CyberPanel.");
+        }
+      } catch (e) {
+        console.error("Test CyberPanel non-JSON response:", text);
+        onError(`Server error (${res.status}): The connection timed out or host is unreachable. Response started with: ${text.substring(0, 20)}`);
+      }
+    } catch (err: any) {
+      onError(err.message || "Network error occurred.");
+    } finally {
+      setIsTestingCyberPanel(false);
+    }
+  };
+
+  const handleCyberPanelBackup = async (type: "database" | "full") => {
+    onSuccess("");
+    onError("");
+    setIsBackingUpCyberPanel(type);
+    try {
+      const res = await fetch(`/api/admin/backup/cyberpanel/${type}`, {
+        method: "POST",
+      });
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (res.ok) {
+          onSuccess(data.message || `${type === 'full' ? 'Full' : 'Database'} backup uploaded to CyberPanel successfully!`);
+          fetchBackupSettings();
+        } else {
+          onError(data.error || `Failed to upload ${type} backup.`);
+        }
+      } catch (e) {
+        console.error("Backup CyberPanel non-JSON response:", text);
+        onError(`Server error (${res.status}): The connection timed out. Response started with: ${text.substring(0, 20)}`);
+      }
+    } catch (err: any) {
+      onError(err.message || "Network error occurred.");
+    } finally {
+      setIsBackingUpCyberPanel(null);
     }
   };
 
@@ -188,125 +286,310 @@ export default function AdminBackupsTab({
     <div className="space-y-4 animate-fade-in" id="admin-backups-tab">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
-        {/* Left Column: Cloud Backup - Compact */}
-        <div className="lg:col-span-5 bg-white border border-slate-100 rounded-2xl p-4 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
-            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Cloud className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800 text-xs">Cloud Auto Backup</h3>
-              <p className="text-[10px] text-slate-400 font-bold">Auto cloud destinations & connection test</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSaveBackupSettings} className="space-y-4">
-            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100/50">
+        {/* Left Column: Cloud Backup & CyberPanel */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+              <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                <Cloud className="w-4 h-4" />
+              </div>
               <div>
-                <span className="block font-bold text-slate-700 text-xs">Auto Cloud Backup</span>
-                <span className="block text-[9px] text-slate-400 font-bold">Transmit backup JSON automatically</span>
+                <h3 className="font-bold text-slate-800 text-xs">Cloud Auto Backup</h3>
+                <p className="text-[10px] text-slate-400 font-bold">Auto cloud destinations & connection test</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setBackupSettings({ ...backupSettings, enabled: !backupSettings.enabled })}
-                className="cursor-pointer"
-              >
-                {backupSettings.enabled ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black rounded-lg border border-indigo-100/50">
-                    <Check className="w-2.5 h-2.5" /> Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 text-[9px] font-bold rounded-lg border border-slate-200">
-                    Inactive
-                  </span>
-                )}
-              </button>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
-                Cloud Backup Server Endpoint URL
-              </label>
-              <input
-                type="url"
-                placeholder="https://your-cloud-endpoint/api/backup"
-                value={backupSettings.cloudUrl}
-                onChange={(e) => setBackupSettings({ ...backupSettings, cloudUrl: e.target.value })}
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none font-mono text-slate-700"
-              />
-              <p className="text-[9px] text-slate-400 font-medium">
-                The system will POST secure JSON state snapshots to this absolute URL destination.
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
-                Sync Interval (Hours)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="168"
-                value={backupSettings.intervalHours}
-                onChange={(e) => setBackupSettings({ ...backupSettings, intervalHours: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none"
-              />
-            </div>
-
-            {/* Compact Cloud Status Block */}
-            <div className="p-3 bg-slate-900 text-slate-300 rounded-xl border border-slate-800 space-y-1.5 font-mono">
-              <div className="flex justify-between items-center text-[8px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-800/60 pb-1">
-                <span>Cloud Sync State</span>
-                <span>Target Active</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px] leading-relaxed">
+            <form onSubmit={handleSaveBackupSettings} className="space-y-4">
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100/50">
                 <div>
-                  <span className="text-slate-500 block text-[8px]">Last Backup:</span>
-                  <span className="font-bold text-slate-200">
-                    {backupSettings.lastBackupAt ? new Date(backupSettings.lastBackupAt).toLocaleString() : "Never"}
-                  </span>
+                  <span className="block font-bold text-slate-700 text-xs">Auto Cloud Backup</span>
+                  <span className="block text-[9px] text-slate-400 font-bold">Transmit backup JSON automatically</span>
                 </div>
-                <div>
-                  <span className="text-slate-500 block text-[8px]">Sync Status:</span>
-                  {backupSettings.lastBackupStatus ? (
-                    <span className={`px-1 py-0.2 rounded text-[8px] font-black uppercase border ${
-                      backupSettings.lastBackupStatus === "success" 
-                        ? "bg-emerald-950 border-emerald-900 text-emerald-400" 
-                        : "bg-rose-950 border-rose-900 text-rose-400"
-                    }`}>
-                      {backupSettings.lastBackupStatus}
+                <button
+                  type="button"
+                  onClick={() => setBackupSettings({ ...backupSettings, enabled: !backupSettings.enabled })}
+                  className="cursor-pointer"
+                >
+                  {backupSettings.enabled ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black rounded-lg border border-indigo-100/50">
+                      <Check className="w-2.5 h-2.5" /> Active
                     </span>
                   ) : (
-                    <span className="text-slate-400 font-bold">None</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 text-[9px] font-bold rounded-lg border border-slate-200">
+                      Inactive
+                    </span>
                   )}
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                  Cloud Backup Server Endpoint URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://your-cloud-endpoint/api/backup"
+                  value={backupSettings.cloudUrl || ""}
+                  onChange={(e) => setBackupSettings({ ...backupSettings, cloudUrl: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none font-mono text-slate-700"
+                />
+                <p className="text-[9px] text-slate-400 font-medium">
+                  The system will POST secure JSON state snapshots to this absolute URL destination.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                  Sync Interval (Hours)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="168"
+                  value={backupSettings.intervalHours || 24}
+                  onChange={(e) => setBackupSettings({ ...backupSettings, intervalHours: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none"
+                />
+              </div>
+
+              {/* Compact Cloud Status Block */}
+              <div className="p-3 bg-slate-900 text-slate-300 rounded-xl border border-slate-800 space-y-1.5 font-mono">
+                <div className="flex justify-between items-center text-[8px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-800/60 pb-1">
+                  <span>Cloud Sync State</span>
+                  <span>Target Active</span>
                 </div>
+                <div className="grid grid-cols-2 gap-1.5 text-[10px] leading-relaxed">
+                  <div>
+                    <span className="text-slate-500 block text-[8px]">Last Backup:</span>
+                    <span className="font-bold text-slate-200">
+                      {backupSettings.lastBackupAt ? new Date(backupSettings.lastBackupAt).toLocaleString() : "Never"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[8px]">Sync Status:</span>
+                    {backupSettings.lastBackupStatus ? (
+                      <span className={`px-1 py-0.2 rounded text-[8px] font-black uppercase border ${
+                        backupSettings.lastBackupStatus === "success" 
+                          ? "bg-emerald-950 border-emerald-900 text-emerald-400" 
+                          : "bg-rose-950 border-rose-900 text-rose-400"
+                      }`}>
+                        {backupSettings.lastBackupStatus}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-bold">None</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isSavingBackupSettings}
+                  className="flex-1 py-2 bg-slate-900 hover:bg-slate-850 text-white rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs"
+                >
+                  {isSavingBackupSettings ? "Saving..." : "Save Config"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTestCloudBackup}
+                  disabled={isTestingCloud || !backupSettings.cloudUrl}
+                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-50 text-indigo-600 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1"
+                >
+                  {isTestingCloud ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <UploadCloud className="w-3 h-3" />
+                  )}
+                  <span>Test Upload</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+              <div className="p-1.5 bg-blue-50 text-blue-600 rounded-xl">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-xs">CyberPanel Cloud Backup</h3>
+                <p className="text-[10px] text-slate-400 font-bold">SFTP integration for remote backups</p>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isSavingBackupSettings}
-                className="flex-1 py-2 bg-slate-900 hover:bg-slate-850 text-white rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs"
-              >
-                {isSavingBackupSettings ? "Saving..." : "Save Config"}
-              </button>
+            <form onSubmit={handleSaveCyberPanel} className="space-y-3">
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100/50">
+                <div>
+                  <span className="block font-bold text-slate-700 text-xs">Enable Integration</span>
+                  <span className="block text-[9px] text-slate-400 font-bold">Connect to CyberPanel Server</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCyberPanelConfig({ ...cyberPanelConfig, enabled: !cyberPanelConfig.enabled })}
+                  className="cursor-pointer"
+                >
+                  {cyberPanelConfig.enabled ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded-lg border border-blue-100/50">
+                      <Check className="w-2.5 h-2.5" /> Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 text-[9px] font-bold rounded-lg border border-slate-200">
+                      Inactive
+                    </span>
+                  )}
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleTestCloudBackup}
-                disabled={isTestingCloud || !backupSettings.cloudUrl}
-                className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-50 text-indigo-600 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1"
-              >
-                {isTestingCloud ? (
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                ) : (
-                  <UploadCloud className="w-3 h-3" />
-                )}
-                <span>Test Upload</span>
-              </button>
-            </div>
-          </form>
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                  SFTP Host IP
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 65.21.224.219"
+                  value={cyberPanelConfig.hostIp || ""}
+                  onChange={(e) => setCyberPanelConfig({ ...cyberPanelConfig, hostIp: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none text-slate-700"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                    SFTP Username
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. bk_75ad..."
+                    value={cyberPanelConfig.username || ""}
+                    onChange={(e) => setCyberPanelConfig({ ...cyberPanelConfig, username: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none text-slate-700"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                    Port
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="22"
+                    value={cyberPanelConfig.port || ""}
+                    onChange={(e) => setCyberPanelConfig({ ...cyberPanelConfig, port: Number(e.target.value) })}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                  SSH Private Key Block
+                </label>
+                <textarea
+                  placeholder="-----BEGIN OPENSSH PRIVATE KEY-----..."
+                  value={cyberPanelConfig.sshKey || ""}
+                  onChange={(e) => setCyberPanelConfig({ ...cyberPanelConfig, sshKey: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-mono outline-none text-slate-700 h-24 resize-none custom-scrollbar"
+                ></textarea>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase tracking-wider font-black text-slate-400">
+                  Remote Path
+                </label>
+                <input
+                  type="text"
+                  placeholder="cpbackups/smart_uptime_notification"
+                  value={cyberPanelConfig.remotePath || ""}
+                  onChange={(e) => setCyberPanelConfig({ ...cyberPanelConfig, remotePath: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none text-slate-700"
+                />
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                <h4 className="text-[10px] font-black text-slate-700 uppercase">Manual SSH Key Setup</h4>
+                <p className="text-[9px] text-slate-500">Run these commands on your CyberPanel server to grant access:</p>
+                <div className="bg-slate-900 rounded text-slate-300 font-mono text-[9px] p-2 overflow-x-auto whitespace-pre">
+{`# 1. Generate SSH key:
+ssh-keygen -t ed25519 -f /root/.ssh/cyberpanel -N ""
+
+# 2. Copy the public key:
+cat /root/.ssh/cyberpanel.pub
+
+# 3. Test connection:
+sftp -i /root/.ssh/cyberpanel -P 22 bk_75ad9ea559b09a5a@65.21.224.219`}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="submit"
+                  disabled={isSavingCyberPanel}
+                  className="flex-1 py-2 bg-slate-900 hover:bg-slate-850 text-white rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs"
+                >
+                  {isSavingCyberPanel ? "Saving..." : "Save Config"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestCyberPanel}
+                  disabled={isTestingCyberPanel}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1.5 whitespace-nowrap"
+                >
+                  {isTestingCyberPanel ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <UploadCloud className="w-3.5 h-3.5" />
+                  )}
+                  Test Connection
+                </button>
+              </div>
+
+              {cyberPanelDirectories.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 mt-3 max-h-48 overflow-y-auto custom-scrollbar">
+                  <h4 className="text-[10px] font-black text-slate-700 uppercase sticky top-0 bg-slate-50 py-1">Remote Directories Found</h4>
+                  <ul className="space-y-1">
+                    {cyberPanelDirectories.map((dir, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-[10px] font-mono text-slate-600 bg-white p-1.5 rounded border border-slate-100">
+                        {dir.type === 'd' ? <Database className="w-3 h-3 text-blue-400" /> : <Cloud className="w-3 h-3 text-slate-400" />}
+                        <span>{dir.name}</span>
+                        <span className="text-[8px] text-slate-400 ml-auto">{dir.size} B</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => handleCyberPanelBackup('database')}
+                  disabled={isBackingUpCyberPanel !== null}
+                  className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 border border-blue-100 rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1.5"
+                >
+                  {isBackingUpCyberPanel === 'database' ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Database className="w-3.5 h-3.5" />
+                  )}
+                  {isBackingUpCyberPanel === 'database' ? 'Uploading...' : 'Database Backup'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCyberPanelBackup('full')}
+                  disabled={isBackingUpCyberPanel !== null}
+                  className="flex-1 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-lg text-xs font-black transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1.5"
+                >
+                  {isBackingUpCyberPanel === 'full' ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Cloud className="w-3.5 h-3.5" />
+                  )}
+                  {isBackingUpCyberPanel === 'full' ? 'Uploading...' : 'Full Backup'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Right Column: Database State Snapshots - Compact */}
@@ -377,6 +660,15 @@ export default function AdminBackupsTab({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <a
+                      href={`/api/admin/backup/download/${snapshot.id}`}
+                      download
+                      className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] rounded-lg font-black transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Download className="w-2.5 h-2.5" />
+                      <span>Download</span>
+                    </a>
+
                     <button
                       type="button"
                       onClick={() => handleRestoreBackup(snapshot.id, snapshot.name)}
@@ -386,7 +678,7 @@ export default function AdminBackupsTab({
                       {restoringId === snapshot.id ? (
                         <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                       ) : (
-                        <Download className="w-2.5 h-2.5" />
+                        <Database className="w-2.5 h-2.5" />
                       )}
                       <span>Restore</span>
                     </button>

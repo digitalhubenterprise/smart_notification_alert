@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import dns from "dns";
 import crypto from "crypto";
+import Client from "ssh2-sftp-client";
 import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
@@ -1288,6 +1289,7 @@ async function startServer() {
       const db = readDb();
       res.json({
         backupSettings: db.backupSettings || { enabled: false, cloudUrl: "", intervalHours: 24 },
+        cyberPanelConfig: (db as any).cyberPanelConfig || { enabled: false, hostIp: "", username: "", port: 22, sshKey: "", remotePath: "cpbackups/smart_uptime_notification" },
         backupSnapshots: (db.backupSnapshots || []).map(s => ({
           id: s.id,
           name: s.name,
@@ -1295,6 +1297,194 @@ async function startServer() {
           sizeBytes: s.sizeBytes
         }))
       });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 1.5 Update CyberPanel Config
+  app.post("/api/admin/backup/cyberpanel", (req, res) => {
+    try {
+      const { enabled, hostIp, username, port, sshKey, remotePath } = req.body;
+      const db = readDb();
+      (db as any).cyberPanelConfig = {
+        enabled: Boolean(enabled),
+        hostIp: String(hostIp || ""),
+        username: String(username || ""),
+        port: Number(port || 22),
+        sshKey: String(sshKey || ""),
+        remotePath: String(remotePath || "cpbackups/smart_uptime_notification")
+      };
+      writeDb(db);
+      addSystemLog("info", `CyberPanel configurations updated by administrator. Host: ${hostIp || 'None'}`);
+      res.json({ success: true, cyberPanelConfig: db.cyberPanelConfig });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 1.6 Test CyberPanel Connection
+  app.post("/api/admin/backup/cyberpanel/test", async (req, res) => {
+    try {
+      const db = readDb();
+      const config = db.cyberPanelConfig;
+      if (!config || !config.hostIp || !config.username || !config.sshKey) {
+        return res.status(400).json({ error: "CyberPanel credentials are not fully configured." });
+      }
+
+      const sftp = new Client();
+      sftp.on('error', () => { /* ignore background errors to prevent unhandled exception crash */ });
+      try {
+        await sftp.connect({
+          host: config.hostIp,
+          port: config.port || 22,
+          username: config.username,
+          privateKey: config.sshKey,
+          readyTimeout: 10000 // 10 seconds timeout to prevent hanging and 504 HTML errors
+        });
+
+        // Try to list the root or home directory to verify access
+        const list = await sftp.list('/');
+        await sftp.end();
+
+        addSystemLog("info", `CyberPanel test connection successful to host ${config.hostIp}`);
+        res.json({ 
+          success: true, 
+          message: "Connection successful. Found directories.",
+          directories: list.map(item => ({
+            name: item.name,
+            type: item.type, // 'd' for directory, '-' for file
+            size: item.size
+          }))
+        });
+      } catch (err: any) {
+        addSystemLog("error", `CyberPanel test connection failed: ${err.message}`);
+        res.status(400).json({ error: `Connection failed: ${err.message}` });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 1.7 CyberPanel Database Backup
+  app.post("/api/admin/backup/cyberpanel/database", async (req, res) => {
+    try {
+      const db = readDb();
+      const config = db.cyberPanelConfig;
+      if (!config || !config.hostIp || !config.username || !config.sshKey) {
+        return res.status(400).json({ error: "CyberPanel credentials are not fully configured." });
+      }
+
+      const sftp = new Client();
+      sftp.on('error', () => { /* ignore background errors to prevent unhandled exception crash */ });
+      try {
+        await sftp.connect({
+          host: config.hostIp,
+          port: config.port || 22,
+          username: config.username,
+          privateKey: config.sshKey,
+          readyTimeout: 10000
+        });
+
+        const DB_PATH = path.join(process.cwd(), "data", "uptime_db.json");
+        const userPath = config.remotePath || "cpbackups/smart_uptime_notification";
+        const dirPath = userPath.startsWith('/') ? userPath : `./${userPath}`;
+        
+        try {
+          await sftp.mkdir(dirPath, true);
+        } catch (e) {
+          // Ignore error if directory already exists
+        }
+
+        const remoteFile = `${dirPath}/database_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        
+        await sftp.put(DB_PATH, remoteFile);
+        await sftp.end();
+
+        // Create a local snapshot to show in the UI as well
+        const dbString = JSON.stringify(db);
+        const sizeBytes = Buffer.byteLength(dbString, "utf8");
+        const newSnapshot = {
+          id: `backup-${Date.now()}`,
+          name: `CyberPanel DB Backup`,
+          timestamp: new Date().toISOString(),
+          sizeBytes,
+          data: dbString
+        };
+        if (!db.backupSnapshots) {
+          db.backupSnapshots = [];
+        }
+        db.backupSnapshots.unshift(newSnapshot);
+        writeDb(db);
+
+        addSystemLog("info", `CyberPanel Database Backup successful to ${remoteFile}`);
+        res.json({ success: true, message: `Database backed up to ${remoteFile} and local snapshot created.` });
+      } catch (err: any) {
+        addSystemLog("error", `CyberPanel Database Backup failed: ${err.message}`);
+        res.status(400).json({ error: `Backup failed: ${err.message}` });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 1.8 CyberPanel Full Backup
+  app.post("/api/admin/backup/cyberpanel/full", async (req, res) => {
+    try {
+      const db = readDb();
+      const config = db.cyberPanelConfig;
+      if (!config || !config.hostIp || !config.username || !config.sshKey) {
+        return res.status(400).json({ error: "CyberPanel credentials are not fully configured." });
+      }
+
+      const sftp = new Client();
+      sftp.on('error', () => { /* ignore background errors to prevent unhandled exception crash */ });
+      try {
+        await sftp.connect({
+          host: config.hostIp,
+          port: config.port || 22,
+          username: config.username,
+          privateKey: config.sshKey,
+          readyTimeout: 10000
+        });
+
+        const DB_PATH = path.join(process.cwd(), "data", "uptime_db.json");
+        const userPath = config.remotePath || "cpbackups/smart_uptime_notification";
+        const dirPath = userPath.startsWith('/') ? userPath : `./${userPath}`;
+        
+        try {
+          await sftp.mkdir(dirPath, true);
+        } catch (e) {
+          // Ignore error if directory already exists
+        }
+
+        const remoteFile = `${dirPath}/full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        
+        await sftp.put(DB_PATH, remoteFile);
+        await sftp.end();
+
+        // Create a local snapshot to show in the UI as well
+        const dbString = JSON.stringify(db);
+        const sizeBytes = Buffer.byteLength(dbString, "utf8");
+        const newSnapshot = {
+          id: `backup-${Date.now()}`,
+          name: `CyberPanel Full Backup`,
+          timestamp: new Date().toISOString(),
+          sizeBytes,
+          data: dbString
+        };
+        if (!db.backupSnapshots) {
+          db.backupSnapshots = [];
+        }
+        db.backupSnapshots.unshift(newSnapshot);
+        writeDb(db);
+
+        addSystemLog("info", `CyberPanel Full Backup successful to ${remoteFile}`);
+        res.json({ success: true, message: `Full backup uploaded to ${remoteFile} and local snapshot created.` });
+      } catch (err: any) {
+        addSystemLog("error", `CyberPanel Full Backup failed: ${err.message}`);
+        res.status(400).json({ error: `Backup failed: ${err.message}` });
+      }
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1483,7 +1673,7 @@ async function startServer() {
         res.json({ success: true, message: uploadMessage });
       } else {
         addSystemLog("error", `Cloud backup test failed: ${uploadMessage}`);
-        res.status(502).json({ error: uploadMessage });
+        res.status(400).json({ error: uploadMessage });
       }
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1500,6 +1690,25 @@ async function startServer() {
       writeDb(db);
       addSystemLog("info", `Deleted backup snapshot ${id}`);
       res.json({ success: true, deleted: initialCount - db.backupSnapshots.length > 0 });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 7. Download backup snapshot
+  app.get("/api/admin/backup/download/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const db = readDb();
+      const snapshot = (db.backupSnapshots || []).find(s => s.id === id);
+      
+      if (!snapshot) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+
+      res.setHeader("Content-Disposition", `attachment; filename="backup_${snapshot.name.replace(/[^a-zA-Z0-9_-]/g, "_")}_${snapshot.timestamp.replace(/[:.]/g, "-")}.json"`);
+      res.setHeader("Content-Type", "application/json");
+      res.send(snapshot.data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
