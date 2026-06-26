@@ -1462,10 +1462,8 @@ async function startServer() {
         }
 
         const remoteFile = `${dirPath}/full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
-        
         const archive = new ZipArchive({ zlib: { level: 9 } });
         const passThrough = new PassThrough();
-        
         const uploadPromise = sftp.put(passThrough, remoteFile);
         
         // zip the whole directory, excluding node_modules, dist, .git
@@ -1499,8 +1497,9 @@ async function startServer() {
         addSystemLog("info", `CyberPanel Full Backup successful to ${remoteFile}`);
         res.json({ success: true, message: `Full backup uploaded to ${remoteFile} and local snapshot created.` });
       } catch (err: any) {
+        console.error("FULL BACKUP ERROR TRACE:", err);
         addSystemLog("error", `CyberPanel Full Backup failed: ${err.message}`);
-        res.status(400).json({ error: `Backup failed: ${err.message}` });
+        res.status(400).json({ error: `Backup failed: ${err.message}`, stack: err.stack, name: err.name });
       }
     } catch (err: any) {
       res.status(500).json({ error: err.message });

@@ -49,6 +49,7 @@ export default function AdminBackupsTab({
   const [isTestingCloud, setIsTestingCloud] = useState(false);
   const [newBackupName, setNewBackupName] = useState("");
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: 'restore' | 'delete', id: string, name?: string } | null>(null);
 
   const fetchBackupSettings = async () => {
     setIsLoadingBackups(true);
@@ -233,52 +234,59 @@ export default function AdminBackupsTab({
     }
   };
 
-  const handleRestoreBackup = async (id: string, name: string) => {
-    if (!window.confirm(`Are you absolutely sure you want to restore the system to "${name}"?\nThis will revert all current data to this snapshot!`)) {
-      return;
-    }
-    onSuccess("");
-    onError("");
-    setRestoringId(id);
-    try {
-      const res = await fetch("/api/admin/backup/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
-      });
-      if (res.ok) {
-        onSuccess(`System restored successfully to "${name}"!`);
-        onRefreshData();
-      } else {
-        const data = await res.json();
-        onError(data.error || "Failed to restore backup snapshot.");
-      }
-    } catch (err: any) {
-      onError(`Restore error: ${err.message}`);
-    } finally {
-      setRestoringId(null);
-    }
+  const handleRestoreBackup = (id: string, name: string) => {
+    setConfirmDialog({ type: 'restore', id, name });
   };
 
-  const handleDeleteBackup = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this backup snapshot? This cannot be undone.")) {
-      return;
-    }
-    onSuccess("");
-    onError("");
-    try {
-      const res = await fetch(`/api/admin/backup/delete/${id}`, {
-        method: "DELETE"
-      });
-      if (res.ok) {
-        onSuccess("Backup snapshot deleted successfully.");
-        fetchBackupSettings();
-      } else {
-        const data = await res.json();
-        onError(data.error || "Failed to delete backup snapshot.");
+  const handleDeleteBackup = (id: string) => {
+    setConfirmDialog({ type: 'delete', id });
+  };
+
+  const executeConfirm = async () => {
+    if (!confirmDialog) return;
+    const { type, id, name } = confirmDialog;
+    
+    setConfirmDialog(null);
+
+    if (type === 'restore') {
+      onSuccess("");
+      onError("");
+      setRestoringId(id);
+      try {
+        const res = await fetch("/api/admin/backup/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+          onSuccess(`System restored successfully to "${name}"!`);
+          onRefreshData();
+        } else {
+          const data = await res.json();
+          onError(data.error || "Failed to restore backup snapshot.");
+        }
+      } catch (err: any) {
+        onError(`Restore error: ${err.message}`);
+      } finally {
+        setRestoringId(null);
       }
-    } catch (err: any) {
-      onError(err.message || "Failed to delete backup snapshot.");
+    } else if (type === 'delete') {
+      onSuccess("");
+      onError("");
+      try {
+        const res = await fetch(`/api/admin/backup/delete/${id}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          onSuccess("Backup snapshot deleted successfully.");
+          fetchBackupSettings();
+        } else {
+          const data = await res.json();
+          onError(data.error || "Failed to delete backup snapshot.");
+        }
+      } catch (err: any) {
+        onError(err.message || "Failed to delete backup snapshot.");
+      }
     }
   };
 
@@ -659,53 +667,119 @@ sftp -i /root/.ssh/cyberpanel -P 22 bk_75ad9ea559b09a5a@65.21.224.219`}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`/api/admin/backup/download/${snapshot.id}`}
-                      download
-                      className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] rounded-lg font-black transition-all cursor-pointer flex items-center gap-1"
-                    >
-                      <Download className="w-2.5 h-2.5" />
-                      <span>Download</span>
-                    </a>
+                    <div className="flex items-center gap-1.5 mt-2 sm:mt-0">
+                      <a
+                        href={`/api/admin/backup/download/${snapshot.id}`}
+                        download
+                        className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                      >
+                        <Download className="w-3 h-3 text-slate-400" />
+                        <span className="hidden sm:inline">Download</span>
+                      </a>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRestoreBackup(snapshot.id, snapshot.name)}
-                      disabled={restoringId !== null}
-                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 text-indigo-600 border border-indigo-100/50 text-[10px] rounded-lg font-black transition-all cursor-pointer flex items-center gap-1"
-                    >
-                      {restoringId === snapshot.id ? (
-                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                      ) : (
-                        <Database className="w-2.5 h-2.5" />
-                      )}
-                      <span>Restore</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRestoreBackup(snapshot.id, snapshot.name)}
+                        disabled={restoringId !== null}
+                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 text-indigo-700 border border-indigo-200 text-[10px] rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                      >
+                        {restoringId === snapshot.id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-3 h-3 text-indigo-500" />
+                        )}
+                        <span className="hidden sm:inline">Restore</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteBackup(snapshot.id)}
-                      className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-lg transition-all cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBackup(snapshot.id)}
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg transition-all cursor-pointer shadow-2xs"
+                        title="Delete Backup"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
 
-          {/* Compact Warning block */}
-          <div className="p-2 bg-amber-50/50 border border-amber-100/30 rounded-xl text-[9px] text-amber-800 leading-normal font-bold flex gap-1.5 shrink-0">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>
-              <strong>WARNING:</strong> Restoring database snapshots overwrites all active monitor targets, subscriber profiles, balances, and parameters. Use with caution.
-            </span>
+            {/* Compact Warning block */}
+            <div className="p-2.5 bg-amber-50 border border-amber-200/60 rounded-xl text-[10px] text-amber-800 leading-normal font-bold flex gap-2 shrink-0 items-start shadow-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <span>
+                <strong>WARNING:</strong> Restoring database snapshots completely overwrites all active monitor targets, subscriber profiles, balances, and system parameters. This action is irreversible. Use with extreme caution.
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Confirmation Modal */}
+        {confirmDialog && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-100 flex flex-col scale-100 animate-in zoom-in-95 duration-200">
+              <div className={`p-4 border-b ${confirmDialog.type === 'restore' ? 'bg-indigo-50/50 border-indigo-100/50' : 'bg-rose-50/50 border-rose-100/50'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${confirmDialog.type === 'restore' ? 'bg-indigo-100 text-indigo-600' : 'bg-rose-100 text-rose-600'}`}>
+                    {confirmDialog.type === 'restore' ? <RefreshCw className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 text-sm">
+                      {confirmDialog.type === 'restore' ? 'Restore System Snapshot' : 'Delete Snapshot'}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      {confirmDialog.type === 'restore' ? 'This action is highly destructive.' : 'This action cannot be undone.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {confirmDialog.type === 'restore' ? (
+                    <>
+                      Are you absolutely sure you want to restore the system to <strong>"{confirmDialog.name}"</strong>? All current data will be overwritten and permanently lost.
+                    </>
+                  ) : (
+                    <>
+                      Are you sure you want to permanently delete this backup snapshot?
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDialog(null)}
+                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={executeConfirm}
+                  className={`px-4 py-2 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm ${
+                    confirmDialog.type === 'restore' 
+                      ? 'bg-indigo-600 hover:bg-indigo-700' 
+                      : 'bg-rose-600 hover:bg-rose-700'
+                  }`}
+                >
+                  {confirmDialog.type === 'restore' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Confirm Restore
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete Backup
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
+    );
+  }
