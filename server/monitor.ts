@@ -245,15 +245,22 @@ async function runEngineTick() {
     const monitors = db.monitors;
     const now = Date.now();
 
-    // Automatically clear all logs (monitor execution history & system alert logs) older than 12 hours
-    const twelveHoursAgo = now - 12 * 60 * 60 * 1000;
+    // Automatically clear logs (monitor execution history, system alert logs, activities) based on retention config
+    const retentionHours = db.config.log_retention_hours || 24;
+    const retentionThreshold = now - retentionHours * 60 * 60 * 1000;
+    
     const initialLogsCount = db.logs.length;
     const initialSysLogsCount = db.systemLogs.length;
+    const initialActivitiesCount = db.activities ? db.activities.length : 0;
 
-    db.logs = db.logs.filter((l) => new Date(l.timestamp).getTime() >= twelveHoursAgo);
-    db.systemLogs = db.systemLogs.filter((sl) => new Date(sl.timestamp).getTime() >= twelveHoursAgo);
+    db.logs = db.logs.filter((l) => new Date(l.timestamp).getTime() >= retentionThreshold);
+    db.systemLogs = db.systemLogs.filter((sl) => new Date(sl.timestamp).getTime() >= retentionThreshold);
+    
+    if (db.activities) {
+      db.activities = db.activities.filter((act) => new Date(act.timestamp).getTime() >= retentionThreshold);
+    }
 
-    if (db.logs.length !== initialLogsCount || db.systemLogs.length !== initialSysLogsCount) {
+    if (db.logs.length !== initialLogsCount || db.systemLogs.length !== initialSysLogsCount || (db.activities && db.activities.length !== initialActivitiesCount)) {
       writeDb(db);
     }
 

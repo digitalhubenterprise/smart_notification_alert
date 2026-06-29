@@ -39,6 +39,7 @@ export default function AdminSettingsTab({
 }: AdminSettingsTabProps) {
   // Original configs
   const [alertDelay, setAlertDelay] = useState(3);
+  const [logRetentionHours, setLogRetentionHours] = useState(24);
   const [tgBotToken, setTgBotToken] = useState("");
   const [tgChatId, setTgChatId] = useState("");
   const [smtpHost, setSmtpHost] = useState("");
@@ -87,6 +88,7 @@ export default function AdminSettingsTab({
   useEffect(() => {
     if (config) {
       setAlertDelay(config.alert_delay_checks);
+      setLogRetentionHours(config.log_retention_hours || 24);
       setTgBotToken(config.telegram_bot_token || "");
       setTgChatId(config.telegram_chat_id || "");
       const host = config.smtp_host || "";
@@ -175,7 +177,8 @@ export default function AdminSettingsTab({
           twofa_email_enabled: twofaEmailEnabled,
           twofa_telegram_enabled: twofaTelegramEnabled,
           twofa_authenticator_enabled: twofaAuthenticatorEnabled,
-          twofa_preferred_method: twofaPreferredMethod
+          twofa_preferred_method: twofaPreferredMethod,
+          log_retention_hours: logRetentionHours
         })
       });
 
@@ -558,6 +561,21 @@ export default function AdminSettingsTab({
                   />
                   <span className="text-[10px] text-slate-400 block leading-relaxed font-bold">
                     Specifies continuous failed check loops before Outage events trigger system-wide notification cascades.
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Log Retention Policy (Hours)</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={logRetentionHours}
+                    onChange={(e) => setLogRetentionHours(Number(e.target.value))}
+                    className="w-full border border-slate-200 bg-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500 font-bold text-slate-800"
+                  />
+                  <span className="text-[10px] text-slate-400 block leading-relaxed font-bold">
+                    Specifies how many hours to retain uptime history, triggered alerts, and recent activities.
                   </span>
                 </div>
 

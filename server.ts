@@ -237,6 +237,7 @@ async function startServer() {
         }
 
         if (lowerEmail !== process.env.ADMIN_EMAIL.toLowerCase().trim() || password !== process.env.ADMIN_PASSWORD) {
+          addSystemLog("error", `Security Audit: Failed admin login attempt for email ${lowerEmail}`);
           res.status(401).json({ error: "Access Denied. Invalid admin credentials." });
           return;
         }
@@ -265,6 +266,7 @@ async function startServer() {
         user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
 
         if (!user) {
+          addSystemLog("error", `Security Audit: Failed subscriber login attempt (user not found): ${lowerEmail}`);
           res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
           return;
         }
@@ -273,6 +275,7 @@ async function startServer() {
         if (user.password_hash && user.password_salt) {
           const computed = hashPassword(password, user.password_salt);
           if (computed !== user.password_hash) {
+            addSystemLog("error", `Security Audit: Failed subscriber login attempt (invalid password): ${lowerEmail}`);
             res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
             return;
           }
@@ -1295,11 +1298,13 @@ async function startServer() {
         twofa_telegram_enabled,
         twofa_authenticator_enabled,
         twofa_preferred_method,
+        log_retention_hours,
       } = req.body;
 
       const db = readDb();
       const config = db.config;
 
+      if (log_retention_hours !== undefined) config.log_retention_hours = Number(log_retention_hours) || 24;
       if (alert_delay_checks !== undefined) config.alert_delay_checks = Number(alert_delay_checks) || 3;
       if (telegram_bot_token !== undefined) config.telegram_bot_token = telegram_bot_token.trim();
       if (telegram_chat_id !== undefined) config.telegram_chat_id = telegram_chat_id.trim();

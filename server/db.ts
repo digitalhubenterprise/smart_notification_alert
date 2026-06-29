@@ -66,6 +66,7 @@ export interface AlertConfig {
   twofa_telegram_enabled?: boolean;
   twofa_authenticator_enabled?: boolean;
   twofa_preferred_method?: string;
+  log_retention_hours?: number;
 }
 
 export interface Payment {
@@ -186,6 +187,7 @@ const DEFAULT_CONFIG: AlertConfig = {
   twofa_telegram_enabled: false,
   twofa_authenticator_enabled: true,
   twofa_preferred_method: "authenticator",
+  log_retention_hours: 24,
 };
 
 const INITIAL_DB: DatabaseSchema = {
