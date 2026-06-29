@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState, useEffect } from "react";
 import { Terminal } from "lucide-react";
 import { SystemLog } from "../../types.ts";
@@ -16,7 +17,7 @@ export default function AdminLogsTab({
 
   const fetchSystemLogs = async () => {
     try {
-      const res = await fetch("/api/admin/system-logs");
+      const res = await apiFetch("/api/admin/system-logs");
       if (res.ok) {
         const data = await res.json();
         setSystemLogs(data);
@@ -34,7 +35,7 @@ export default function AdminLogsTab({
 
   const handleClearLogs = async () => {
     try {
-      const res = await fetch("/api/admin/system-logs/clear", { method: "POST" });
+      const res = await apiFetch("/api/admin/system-logs/clear", { method: "POST" });
       if (res.ok) {
         setSystemLogs([]);
         onSuccess("Logs cleared successfully.");

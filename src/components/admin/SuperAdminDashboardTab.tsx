@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState, useEffect } from "react";
 import { 
   Shield, 
@@ -47,7 +48,7 @@ export default function SuperAdminDashboardTab({
     setIsLoadingStats(true);
     setStatsError("");
     try {
-      const res = await fetch("/api/admin/stats");
+      const res = await apiFetch("/api/admin/stats");
       if (!res.ok) {
         throw new Error("Failed to fetch dashboard metrics");
       }

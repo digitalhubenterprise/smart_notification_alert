@@ -1,3 +1,4 @@
+import { apiFetch } from "./lib/api";
 import React, { useState, useEffect } from "react";
 import { 
   Globe, 
@@ -146,14 +147,15 @@ export default function App() {
       const headers: Record<string, string> = {
         "x-user-email": activeEmail
       };
+      const token = localStorage.getItem("uptimepro_authToken");
+      if (token) headers["x-auth-token"] = token;
       // Parallel fetches for speed and reliability
-      const [userRes, monitorsRes, paymentsRes, configRes, allUsersRes, plansRes] = await Promise.all([
-        fetch(`/api/user?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        fetch(`/api/monitors?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        fetch(`/api/payment/history?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        fetch(`/api/config?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        fetch(`/api/admin/users?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        fetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, { headers })
+      const [userRes, monitorsRes, paymentsRes, configRes, plansRes] = await Promise.all([
+        apiFetch(`/api/user?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        apiFetch(`/api/monitors?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        apiFetch(`/api/payment/history?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        apiFetch(`/api/config?email=${encodeURIComponent(activeEmail)}`, { headers }),
+        apiFetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, { headers })
       ]);
 
       if (userRes.status === 401) {
@@ -163,26 +165,35 @@ export default function App() {
         localStorage.removeItem("uptimepro_activePage");
         localStorage.removeItem("uptimepro_loginEmail");
         localStorage.removeItem("uptimepro_loginPassword");
+        localStorage.removeItem("uptimepro_authToken");
         setUser(null);
         setAuthError("Your session expired or your profile could not be found. Please register or log in again.");
         return;
       }
 
-      if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !allUsersRes.ok || !plansRes.ok) {
+      if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !plansRes.ok) {
         throw new Error("Failed to load server data. Server might be initializing...");
       }
 
-      const [userData, monitorsData, paymentsData, configData, allUsersData, plansData] = await Promise.all([
+      const [userData, monitorsData, paymentsData, configData, plansData] = await Promise.all([
         userRes.json(),
         monitorsRes.json(),
         paymentsRes.json(),
         configRes.json(),
-        allUsersRes.json(),
         plansRes.json()
       ]);
 
+      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || userData?.id === "user-admin";
+      
+      let allUsersData = [];
+      if (isLocalAdmin) {
+        const allUsersRes = await apiFetch(`/api/admin/users?email=${encodeURIComponent(activeEmail)}`, { headers });
+        if (allUsersRes.ok) {
+          allUsersData = await allUsersRes.json();
+        }
+      }
+
       setUser(userData);
-      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || activeEmail.toLowerCase().includes("admin");
       setActiveRole(isLocalAdmin ? "admin" : "subscriber");
       setAllUsers(allUsersData);
       setMonitors(monitorsData);
@@ -191,8 +202,13 @@ export default function App() {
       setPlans(plansData);
       setError(null);
     } catch (err: any) {
-      console.error(err);
       setError(err.message || "Failed to sync with UptimePro Express backend. Re-trying...");
+      // Auto-retry if it's the initialization error
+      if (err.message?.includes("initializing")) {
+        setTimeout(() => {
+          loadPlatformData(true, customEmail);
+        }, 2000);
+      }
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -215,7 +231,7 @@ export default function App() {
     setRequire2fa(false);
     setSimulatedLoginOtp(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword })
@@ -239,6 +255,7 @@ export default function App() {
       if (detectedRole === "admin") {
         setAdminTab("dashboard");
       }
+      localStorage.setItem("uptimepro_authToken", data.token);
       setIsLoggedIn(true);
       
       // Load platform metrics synchronously for the newly logged-in account
@@ -257,7 +274,7 @@ export default function App() {
     setAuthSuccess(null);
     setIsVerifyingLoginOtp(true);
     try {
-      const res = await fetch("/api/auth/login-2fa", {
+      const res = await apiFetch("/api/auth/login-2fa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, otp: login2faOtp })
@@ -273,6 +290,7 @@ export default function App() {
       if (detectedRole === "admin") {
         setAdminTab("dashboard");
       }
+      localStorage.setItem("uptimepro_authToken", data.token);
       setIsLoggedIn(true);
       setRequire2fa(false);
       setSimulatedLoginOtp(null);
@@ -298,7 +316,7 @@ export default function App() {
     setIsRegistering(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -343,7 +361,7 @@ export default function App() {
     setSimulatedOtp(null);
 
     try {
-      const res = await fetch("/api/auth/reset-request", {
+      const res = await apiFetch("/api/auth/reset-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -374,7 +392,7 @@ export default function App() {
     setIsVerifyingOtp(true);
 
     try {
-      const res = await fetch("/api/auth/reset-verify", {
+      const res = await apiFetch("/api/auth/reset-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -627,7 +645,7 @@ export default function App() {
         )}
 
         <div className="flex items-center justify-between text-xs px-1">
-          <span className="text-[9px] text-slate-500 uppercase font-mono tracking-wide">UptimePro v2.0</span>
+          <span className="text-[9px] text-slate-500 uppercase font-mono tracking-wide">UptimePro v4.0</span>
           <button
             onClick={() => loadPlatformData()}
             disabled={isRefreshing}
@@ -652,7 +670,8 @@ export default function App() {
             localStorage.removeItem("uptimepro_activeRole");
             localStorage.removeItem("uptimepro_subscriberTab");
             localStorage.removeItem("uptimepro_adminTab");
-            fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+            localStorage.removeItem("uptimepro_authToken");
+            apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
           }}
           className="w-full px-3 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-rose-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-rose-950 hover:border-rose-900/50"
         >
@@ -1368,7 +1387,7 @@ export default function App() {
           <div className="px-4 sm:px-6 lg:px-8 text-center space-y-2">
             <div className="flex items-center justify-center gap-1.5 text-slate-400">
               <Globe className="w-4 h-4 text-indigo-500" />
-              <span className="text-xs font-bold text-slate-500 font-mono">UptimePro Monitoring Engine v2.0</span>
+              <span className="text-xs font-bold text-slate-500 font-mono">UptimePro Monitoring Engine v4.0</span>
             </div>
             <p className="text-[11px] text-slate-400 max-w-md mx-auto">
               Protected against Server-Side Request Forgery (SSRF) hostname filters. Verifying crypto subscription transactions over public BSC RPC networks.

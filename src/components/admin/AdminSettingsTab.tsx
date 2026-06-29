@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState, useEffect } from "react";
 import { 
   Settings, 
@@ -148,7 +149,7 @@ export default function AdminSettingsTab({
     setIsUpdatingConfig(true);
 
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -283,7 +284,7 @@ export default function AdminSettingsTab({
     onError("");
 
     try {
-      const res = await fetch("/api/admin/twofa/send-test", {
+      const res = await apiFetch("/api/admin/twofa/send-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channel })

@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState } from "react";
 import { 
   Sliders, 
@@ -52,7 +53,7 @@ export default function AdminPlansTab({
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
 
-      const res = await fetch(`/api/admin/plans/${editingPlan.id}`, {
+      const res = await apiFetch(`/api/admin/plans/${editingPlan.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

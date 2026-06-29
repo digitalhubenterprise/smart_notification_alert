@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import dns from "dns";
 import crypto from "crypto";
@@ -7,7 +9,7 @@ import { PassThrough } from "stream";
 import cron from "node-cron";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { readDb, writeDb, addSystemLog, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
+import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
 
@@ -30,10 +32,40 @@ const tempOtps = new Map<string, OtpRecord>();
 
 async function startServer() {
   const app = express();
+  app.set("trust proxy", 1); // Trust first proxy (Cloud Run / Nginx)
   const PORT = 3000;
+
+  // Enterprise Security Headers
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabled for preview iframe compatibility
+    crossOriginEmbedderPolicy: false,
+    frameguard: false
+  }));
 
   // JSON parsing middleware
   app.use(express.json());
+
+  // Global Rate Limiting for all API routes
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
+    message: { error: "Too many requests from this IP, please try again after 15 minutes" },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    validate: { xForwardedForHeader: false, trustProxy: false }
+  });
+  app.use("/api/", apiLimiter);
+
+  // Strict Rate Limiting for Auth routes
+  const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20, // Limit each IP to 20 login/register requests per hour
+    message: { error: "Too many authentication attempts, please try again later" },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false, trustProxy: false }
+  });
+  app.use("/api/auth/", authLimiter);
 
   // Security Middleware
   app.use("/api", (req, res, next) => {
@@ -115,7 +147,8 @@ async function startServer() {
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     user.apiToken = token;
     writeDb(db);
-    res.setHeader('Set-Cookie', 'uptimepro_session=' + token + '; HttpOnly; SameSite=Lax; Path=/');
+    res.setHeader('Set-Cookie', 'uptimepro_session=' + token + '; HttpOnly; SameSite=None; Secure; Path=/');
+    return token;
   }
 
   // Secure Cryptographic Authentication Endpoints
@@ -168,7 +201,7 @@ async function startServer() {
       writeDb(db);
 
       addSystemLog("info", `Security Audit: New node registered successfully: ${newUser.email} (${newUser.id})`);
-      res.json({ success: true, user: newUser });
+      res.json({ success: true, user: getSafeUser(newUser) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -273,8 +306,9 @@ async function startServer() {
       }
 
       addSystemLog("info", `Security Audit: User authenticated successfully via TLS: ${user.email}`);
-      issueSession(user, res, db);
-      res.json({ success: true, user: getSafeUser(user) });
+      addUserActivity(user.id, "login", "Successful Login", `Logged in securely using standard authentication.`);
+      const token = issueSession(user, res, db);
+      res.json({ success: true, user: getSafeUser(user), token });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -329,8 +363,9 @@ async function startServer() {
       tempOtps.delete(recordKey);
 
       addSystemLog("info", `Security Audit: User completed 2FA challenge and logged in successfully: ${user.email}`);
-      issueSession(user, res, db);
-      res.json({ success: true, user: getSafeUser(user) });
+      addUserActivity(user.id, "login", "Successful 2FA Login", `Logged in securely using 2FA challenge via ${record.deliveryMethod.toUpperCase()}.`);
+      const token = issueSession(user, res, db);
+      res.json({ success: true, user: getSafeUser(user), token });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1061,6 +1096,22 @@ async function startServer() {
         const userPayments = db.payments.filter((p) => p.user_id === user.id);
         res.json(userPayments);
       }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Fetch subscriber activities
+  app.get("/api/activities", (req, res) => {
+    try {
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+      const activities = (db.activities || []).filter((a) => a.user_id === user.id);
+      res.json(activities);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

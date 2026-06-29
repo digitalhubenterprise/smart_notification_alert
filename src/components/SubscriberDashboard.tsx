@@ -89,10 +89,14 @@ export default function SubscriberDashboard({
 
   // Secure request signing wrapper
   const fetchWithAuth = (url: string, options: any = {}) => {
-    const headers = {
+    const headers: Record<string, string> = {
       ...(options.headers || {}),
       "x-user-email": user.email
     };
+    const token = localStorage.getItem("uptimepro_authToken");
+    if (token) {
+      headers["x-auth-token"] = token;
+    }
     const separator = url.includes("?") ? "&" : "?";
     const finalUrl = `${url}${separator}email=${encodeURIComponent(user.email)}`;
     return fetch(finalUrl, { ...options, headers });
@@ -111,7 +115,8 @@ export default function SubscriberDashboard({
   // History & Alerts States
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const [alertEvents, setAlertEvents] = useState<any[]>([]);
-  const [historySubTab, setHistorySubTab] = useState<"history" | "alerts">("history");
+  const [activityEvents, setActivityEvents] = useState<any[]>([]);
+  const [historySubTab, setHistorySubTab] = useState<"history" | "alerts" | "activity">("history");
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,19 +166,83 @@ export default function SubscriberDashboard({
     setIsHistoryLoading(true);
     setHistoryError(null);
     try {
-      const [logsRes, alertsRes] = await Promise.all([
+      const [logsRes, alertsRes, activitiesRes] = await Promise.all([
         fetchWithAuth("/api/logs"),
-        fetchWithAuth("/api/alerts")
+        fetchWithAuth("/api/alerts"),
+        fetchWithAuth("/api/activities")
       ]);
-      if (!logsRes.ok || !alertsRes.ok) {
+      if (!logsRes.ok || !alertsRes.ok || !activitiesRes.ok) {
         throw new Error("Failed to load historical data.");
       }
-      const [logsData, alertsData] = await Promise.all([
+      const [logsData, alertsData, activitiesData] = await Promise.all([
         logsRes.json(),
-        alertsRes.json()
+        alertsRes.json(),
+        activitiesRes.json()
       ]);
       setHistoryLogs(logsData);
       setAlertEvents(alertsData);
+      
+      // Build unified activity feed
+      const unifiedFeed: any[] = [];
+      
+      // Add login/system activities
+      if (Array.isArray(activitiesData)) {
+        activitiesData.forEach((act) => {
+          unifiedFeed.push({
+            id: act.id,
+            type: "activity",
+            subType: act.type,
+            title: act.title,
+            description: act.description,
+            timestamp: act.timestamp
+          });
+        });
+      }
+      
+      // Add monitor status changes
+      if (Array.isArray(logsData)) {
+        logsData.forEach((log) => {
+          const m = monitors.find(x => x.id === log.monitor_id);
+          unifiedFeed.push({
+            id: log.id,
+            type: "monitor",
+            status: log.status,
+            title: `Monitor ${log.status.toUpperCase()}`,
+            description: `${m ? m.name : log.monitor_id} is ${log.status}. ${log.error || ""}`,
+            timestamp: log.timestamp
+          });
+        });
+      }
+      
+      // Add billing transactions
+      if (Array.isArray(payments)) {
+        payments.forEach((p) => {
+          unifiedFeed.push({
+            id: p.txn_hash,
+            type: "billing",
+            status: p.status,
+            title: `Payment ${p.status.toUpperCase()}`,
+            description: `Deposited ${p.amount} ${p.token}`,
+            timestamp: p.timestamp
+          });
+        });
+      }
+      
+      // Add account creation
+      if (user.createdAt) {
+        unifiedFeed.push({
+          id: 'acc-created',
+          type: "system",
+          title: "Account Created",
+          description: "Your UptimePro account was securely provisioned.",
+          timestamp: user.createdAt
+        });
+      }
+      
+      // Sort newest first
+      unifiedFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setActivityEvents(unifiedFeed);
+
     } catch (err: any) {
       console.error(err);
       setHistoryError(err.message || "Failed to fetch logs.");
@@ -1480,6 +1549,16 @@ export default function SubscriberDashboard({
               >
                 Triggered Alerts ({alertEvents.length})
               </button>
+              <button
+                onClick={() => { setHistorySubTab("activity"); setSearchQuery(""); }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  historySubTab === "activity"
+                    ? "bg-white text-slate-800 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Recent Activity ({activityEvents.length})
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1487,7 +1566,7 @@ export default function SubscriberDashboard({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder={historySubTab === "history" ? "Search by monitor or status..." : "Search alerts description..."}
+                  placeholder={historySubTab === "history" ? "Search by monitor or status..." : historySubTab === "alerts" ? "Search alerts description..." : "Search timeline events..."}
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setHistoryPage(1); setAlertPage(1); }}
                   className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all"
@@ -1647,7 +1726,7 @@ export default function SubscriberDashboard({
                 );
               })()}
             </div>
-          ) : (
+          ) : historySubTab === "alerts" ? (
             <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xs">
               {(() => {
                 const filtered = alertEvents.filter(evt => {
@@ -1750,7 +1829,55 @@ export default function SubscriberDashboard({
                 );
               })()}
             </div>
-          )}
+          ) : historySubTab === "activity" ? (
+            <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xs p-8 relative">
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight mb-8">Recent Activity Feed</h2>
+              {(() => {
+                const filteredActivities = activityEvents.filter(act => 
+                  !searchQuery || 
+                  act.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  act.description.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                
+                if (filteredActivities.length === 0) {
+                  return (
+                    <div className="py-12 text-center">
+                      <Activity className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                      <span className="block font-bold text-slate-500">No recent activity found.</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="relative border-l border-slate-100 ml-3 space-y-8">
+                    {filteredActivities.slice(0, 50).map((act, idx) => (
+                      <div key={`${act.id}-${idx}`} className="relative pl-6 sm:pl-8 group">
+                        {/* Timeline Dot */}
+                        <span className={`absolute -left-[5px] top-1.5 w-[10px] h-[10px] rounded-full ring-4 ring-white ${
+                          act.type === 'activity' || act.subType === 'login' ? 'bg-emerald-500' :
+                          act.type === 'monitor' ? 'bg-indigo-500' :
+                          act.type === 'billing' ? 'bg-amber-500' : 'bg-slate-400'
+                        }`} />
+                        
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1.5">
+                          <h3 className="font-bold text-slate-800 text-sm">{act.title}</h3>
+                          <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">
+                            {new Date(act.timestamp).toLocaleString(undefined, {
+                              year: 'numeric', month: 'short', day: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-600 leading-relaxed max-w-2xl">
+                          {act.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : null}
 
         </div>
       )}

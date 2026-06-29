@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { 
@@ -120,7 +121,7 @@ export default function AdminSubscribersTab({
     setIsResetting2FA(true);
 
     try {
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+      const res = await apiFetch(`/api/admin/users/${editingUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -157,7 +158,7 @@ export default function AdminSubscribersTab({
     setIsSaving(true);
 
     try {
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+      const res = await apiFetch(`/api/admin/users/${editingUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

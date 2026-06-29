@@ -112,6 +112,16 @@ export interface BackupSettings {
   lastBackupMessage?: string;
 }
 
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  type: "login" | "monitor" | "billing" | "system";
+  title: string;
+  description: string;
+  timestamp: string;
+  metadata?: any;
+}
+
 export interface DatabaseSchema {
   users: User[];
   monitors: Monitor[];
@@ -119,6 +129,7 @@ export interface DatabaseSchema {
   config: AlertConfig;
   payments: Payment[];
   systemLogs: SystemLog[];
+  activities?: UserActivity[];
   plans: SubscriptionPlan[];
   backupSettings?: BackupSettings;
   cyberPanelConfig?: any;
@@ -510,6 +521,27 @@ function scheduleSave() {
       setTimeout(scheduleSave, 500); // 500ms debounce
     }
   });
+}
+
+export function addUserActivity(user_id: string, type: "login" | "monitor" | "billing" | "system", title: string, description: string, metadata?: any) {
+  const db = readDb();
+  if (!db.activities) {
+    db.activities = [];
+  }
+  const newActivity: UserActivity = {
+    id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    user_id,
+    type,
+    title,
+    description,
+    timestamp: new Date().toISOString(),
+    metadata
+  };
+  db.activities.unshift(newActivity);
+  if (db.activities.length > 5000) {
+    db.activities = db.activities.slice(0, 5000);
+  }
+  writeDb(db);
 }
 
 // Log helper

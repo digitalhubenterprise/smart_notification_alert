@@ -1,3 +1,4 @@
+import { apiFetch } from "../../lib/api";
 import React, { useState, useEffect } from "react";
 import { 
   Cloud, 
@@ -54,7 +55,7 @@ export default function AdminBackupsTab({
   const fetchBackupSettings = async () => {
     setIsLoadingBackups(true);
     try {
-      const res = await fetch("/api/admin/backup/settings");
+      const res = await apiFetch("/api/admin/backup/settings");
       if (res.ok) {
         const data = await res.json();
         setBackupSettings(data.backupSettings);
@@ -78,7 +79,7 @@ export default function AdminBackupsTab({
     onError("");
     setIsSavingBackupSettings(true);
     try {
-      const res = await fetch("/api/admin/backup/settings", {
+      const res = await apiFetch("/api/admin/backup/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(backupSettings)
@@ -104,7 +105,7 @@ export default function AdminBackupsTab({
     onError("");
     setIsSavingCyberPanel(true);
     try {
-      const res = await fetch("/api/admin/backup/cyberpanel", {
+      const res = await apiFetch("/api/admin/backup/cyberpanel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cyberPanelConfig)
@@ -130,7 +131,7 @@ export default function AdminBackupsTab({
     setIsTestingCyberPanel(true);
     setCyberPanelDirectories([]);
     try {
-      const res = await fetch("/api/admin/backup/cyberpanel/test", {
+      const res = await apiFetch("/api/admin/backup/cyberpanel/test", {
         method: "POST",
       });
       const text = await res.text();
@@ -160,7 +161,7 @@ export default function AdminBackupsTab({
     onError("");
     setIsBackingUpCyberPanel(type);
     try {
-      const res = await fetch(`/api/admin/backup/cyberpanel/${type}`, {
+      const res = await apiFetch(`/api/admin/backup/cyberpanel/${type}`, {
         method: "POST",
       });
       const text = await res.text();
@@ -189,7 +190,7 @@ export default function AdminBackupsTab({
     onError("");
     setIsCreatingBackup(true);
     try {
-      const res = await fetch("/api/admin/backup/create", {
+      const res = await apiFetch("/api/admin/backup/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newBackupName })
@@ -214,7 +215,7 @@ export default function AdminBackupsTab({
     onError("");
     setIsTestingCloud(true);
     try {
-      const res = await fetch("/api/admin/backup/test-cloud", {
+      const res = await apiFetch("/api/admin/backup/test-cloud", {
         method: "POST"
       });
       if (res.ok) {
@@ -253,7 +254,7 @@ export default function AdminBackupsTab({
       onError("");
       setRestoringId(id);
       try {
-        const res = await fetch("/api/admin/backup/restore", {
+        const res = await apiFetch("/api/admin/backup/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id })
@@ -274,7 +275,7 @@ export default function AdminBackupsTab({
       onSuccess("");
       onError("");
       try {
-        const res = await fetch(`/api/admin/backup/delete/${id}`, {
+        const res = await apiFetch(`/api/admin/backup/delete/${id}`, {
           method: "DELETE"
         });
         if (res.ok) {
