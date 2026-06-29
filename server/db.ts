@@ -351,22 +351,107 @@ let dbCache: DatabaseSchema | null = null;
 let pgPool: pg.Pool | null = null;
 let isSaving = false;
 let needsSave = false;
+let isPgConnected = false;
+let lastPgError: string | null = null;
 
 export function getPgPool(): pg.Pool | null {
-  if (!pgPool && process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL || (dbCache?.config as any)?.database_url || (readDb().config as any)?.database_url;
+  if (!pgPool && url) {
     try {
       pgPool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+        connectionString: url,
+        ssl: url.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
         max: 20, // Support more connections for 500+ users
         idleTimeoutMillis: 30000
       });
       console.log("[PostgreSQL] Pool initialized.");
-    } catch (err) {
-      console.error("[PostgreSQL] Failed to initialize Pool:", err);
+    } catch (err: any) {
+      lastPgError = err.message;
+      // Silent fallback, status checkable via dashboard admin tab
     }
   }
   return pgPool;
+}
+
+export function getDbStatus() {
+  const config = dbCache?.config || readDb().config;
+  const url = process.env.DATABASE_URL || (config as any)?.database_url;
+  let maskedUrl = null;
+  if (url) {
+    try {
+      // Safely mask connection string password
+      const parsed = new URL(url);
+      maskedUrl = `${parsed.protocol}//*****:*****@${parsed.host}${parsed.pathname}`;
+    } catch {
+      maskedUrl = "Invalid connection string format";
+    }
+  }
+  return {
+    isPgConnected,
+    lastPgError,
+    databaseUrl: maskedUrl,
+    hasConfiguredUrl: !!url
+  };
+}
+
+export async function reconnectDb(newUrl: string): Promise<{ success: boolean; error: string | null }> {
+  if (pgPool) {
+    try {
+      await pgPool.end();
+    } catch (err) {
+      console.error("Error closing old PG pool:", err);
+    }
+    pgPool = null;
+  }
+
+  try {
+    const pool = new pg.Pool({
+      connectionString: newUrl,
+      ssl: newUrl.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+      max: 20,
+      idleTimeoutMillis: 30000
+    });
+    
+    await pool.query("SELECT NOW()");
+    
+    // Create schema if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS uptime_state (
+        key VARCHAR(50) PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Sync current database state if cache exists
+    const currentDb = dbCache || readDb();
+    // Update config locally with new URL
+    (currentDb.config as any).database_url = newUrl;
+    
+    const dataToSave = JSON.stringify(currentDb, null, 2);
+    await pool.query(
+      "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP",
+      [dataToSave]
+    );
+
+    pgPool = pool;
+    isPgConnected = true;
+    lastPgError = null;
+    dbCache = currentDb;
+
+    // Also write to local file for backup
+    try {
+      fs.writeFileSync(DB_PATH, dataToSave, "utf8");
+    } catch (err) {
+      console.error("Failed to write dynamic database url to local file:", err);
+    }
+
+    return { success: true, error: null };
+  } catch (err: any) {
+    isPgConnected = false;
+    lastPgError = err.message;
+    return { success: false, error: err.message };
+  }
 }
 
 export async function initializeDb(): Promise<DatabaseSchema> {
@@ -383,6 +468,8 @@ export async function initializeDb(): Promise<DatabaseSchema> {
       `);
       
       const res = await pool.query("SELECT value FROM uptime_state WHERE key = 'state'");
+      isPgConnected = true;
+      lastPgError = null;
       if (res.rows.length > 0) {
         console.log("[PostgreSQL] Loaded existing state from DB.");
         const parsed = JSON.parse(res.rows[0].value);
@@ -434,8 +521,10 @@ export async function initializeDb(): Promise<DatabaseSchema> {
         );
         console.log("[PostgreSQL] Seeded initial state in database.");
       }
-    } catch (err) {
-      console.error("[PostgreSQL] Error during schema initialization, falling back to local file:", err);
+    } catch (err: any) {
+      isPgConnected = false;
+      lastPgError = err.message;
+      // Silent fallback to local storage
     }
   }
 
@@ -507,7 +596,14 @@ function scheduleSave() {
     ? pool.query(
         "INSERT INTO uptime_state (key, value) VALUES ('state', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP",
         [dataToSave]
-      ).catch(err => console.error("[PostgreSQL] Background save failed:", err))
+      ).then(() => {
+        isPgConnected = true;
+        lastPgError = null;
+      }).catch(err => {
+        isPgConnected = false;
+        lastPgError = err.message;
+        // Silent fallback, local fs save below handles durability
+      })
     : Promise.resolve();
 
   const fsPromise = new Promise<void>((resolve) => {

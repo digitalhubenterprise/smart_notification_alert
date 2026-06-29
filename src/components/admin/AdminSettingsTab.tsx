@@ -20,7 +20,8 @@ import {
   Check,
   Smartphone,
   Eye,
-  EyeOff
+  EyeOff,
+  Database
 } from "lucide-react";
 import { AlertConfig } from "../../types.ts";
 
@@ -69,9 +70,58 @@ export default function AdminSettingsTab({
   const [twofaPreferredMethod, setTwofaPreferredMethod] = useState("authenticator");
 
   // Layout and interactive state
-  const [settingsSubTab, setSettingsSubTab] = useState<"general" | "payment" | "notification" | "email" | "twofa">("general");
+  const [settingsSubTab, setSettingsSubTab] = useState<"general" | "database" | "payment" | "notification" | "email" | "twofa">("general");
   const [isUpdatingConfig, setIsUpdatingConfig] = useState(false);
   const [isRegeneratingSitemap, setIsRegeneratingSitemap] = useState(false);
+  
+  // Database persistence states
+  const [dbStatus, setDbStatus] = useState<{ isPgConnected: boolean; lastPgError: string | null; databaseUrl: string | null; hasConfiguredUrl: boolean } | null>(null);
+  const [newDbUrl, setNewDbUrl] = useState("");
+  const [isUpdatingDb, setIsUpdatingDb] = useState(false);
+  const [isLoadingDbStatus, setIsLoadingDbStatus] = useState(false);
+
+  const fetchDbStatus = async () => {
+    setIsLoadingDbStatus(true);
+    try {
+      const res = await apiFetch("/api/admin/db-status");
+      if (res.ok) {
+        const data = await res.json();
+        setDbStatus(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch database status:", err);
+    } finally {
+      setIsLoadingDbStatus(false);
+    }
+  };
+
+  const handleReconnectDb = async (e: React.FormEvent) => {
+    e.preventDefault();
+    onSuccess("");
+    onError("");
+    if (!newDbUrl.trim()) return;
+
+    setIsUpdatingDb(true);
+    try {
+      const res = await apiFetch("/api/admin/db-reconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ databaseUrl: newDbUrl.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to establish database connection");
+      }
+      onSuccess("⚡ Dynamic database connection established successfully! All local configurations and live monitor records have been migrated to your persistent PostgreSQL instance.");
+      setNewDbUrl("");
+      fetchDbStatus();
+      onRefreshData();
+    } catch (err: any) {
+      onError(err.message || "Database connection attempt failed.");
+    } finally {
+      setIsUpdatingDb(false);
+    }
+  };
   
   // Interactive 2FA test validation sandbox
   const [twofaPasscodeTest, setTwofaPasscodeTest] = useState("");
@@ -85,6 +135,10 @@ export default function AdminSettingsTab({
   const [isDispatchingTest, setIsDispatchingTest] = useState<"email" | "telegram" | null>(null);
 
   // Initialize config fields
+  useEffect(() => {
+    fetchDbStatus();
+  }, []);
+
   useEffect(() => {
     if (config) {
       setAlertDelay(config.alert_delay_checks);
@@ -374,6 +428,7 @@ export default function AdminSettingsTab({
         <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl max-w-2xl gap-0.5">
           {[
             { id: "general", label: "General & SEO" },
+            { id: "database", label: "Database Persistence" },
             { id: "payment", label: "USDT Gateway" },
             { id: "notification", label: "Telegram Dispatcher" },
             { id: "email", label: "SMTP Mail" },
@@ -594,6 +649,135 @@ export default function AdminSettingsTab({
                     <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUBTAB: DATABASE PERSISTENCE */}
+          {settingsSubTab === "database" && (
+            <div className="space-y-4 max-w-2xl animate-fade-in" id="admin-db-settings">
+              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-150">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-indigo-500" />
+                      <span>PostgreSQL Cloud Database Persistence</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 block font-bold leading-relaxed">
+                      Connect to an external persistent database (e.g. Neon, Supabase, or ElephantSQL) to prevent data loss across container deployments.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchDbStatus}
+                    disabled={isLoadingDbStatus}
+                    className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:bg-slate-100 rounded-lg text-slate-600 transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 self-start sm:self-center cursor-pointer shadow-3xs"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isLoadingDbStatus ? "animate-spin" : ""}`} />
+                    <span>Refresh Status</span>
+                  </button>
+                </div>
+
+                {dbStatus ? (
+                  <div className="space-y-4">
+                    {/* Status Indicator */}
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-white shadow-3xs">
+                      <div className={`w-3 h-3 rounded-full shrink-0 ${dbStatus.isPgConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-black text-slate-900 block">
+                          Connection Status: {dbStatus.isPgConnected ? "CONNECTED" : "FALLBACK TO LOCAL MEMORY/FILE"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block font-bold leading-tight truncate">
+                          {dbStatus.isPgConnected 
+                            ? "Data is safely persist-synced in cloud PostgreSQL across all container redeployments." 
+                            : "Data is currently stored in ephemeral local container files. Redeploying will reset all monitors!"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Masked database URL */}
+                    {dbStatus.databaseUrl && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase font-mono tracking-wider">Active Connection Endpoint</label>
+                        <div className="p-2.5 bg-slate-100 rounded-xl font-mono text-[11px] text-slate-700 select-all border border-slate-200/50 break-all leading-tight">
+                          {dbStatus.databaseUrl}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Connection error panel */}
+                    {!dbStatus.isPgConnected && dbStatus.lastPgError && (
+                      <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span className="text-xs font-black text-rose-900">Last Connection Error Detected:</span>
+                        </div>
+                        <p className="text-[10px] font-mono font-bold leading-normal bg-white/70 p-2 rounded-lg border border-rose-100 max-h-32 overflow-y-auto">
+                          {dbStatus.lastPgError}
+                        </p>
+                        <div className="text-[10px] leading-normal font-medium text-rose-700/90 pl-1.5">
+                          💡 <strong>How to resolve:</strong> This error typically means the configured database host (like <code>ngf3jjnxgausyh4f5qiw66y6</code>) cannot be resolved or accessed. Please enter a valid external connection URL below.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-4 text-center">
+                    <RefreshCw className="w-5 h-5 animate-spin text-indigo-500 mx-auto mb-1" />
+                    <span className="text-xs font-bold text-slate-400">Retrieving remote storage coordinates...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Configure new Connection String */}
+              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 space-y-3">
+                <span className="text-xs font-black text-slate-800 block">Configure New External PostgreSQL Database</span>
+                
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">External Database Connection URI (DATABASE_URL)</label>
+                  <input
+                    type="password"
+                    value={newDbUrl}
+                    onChange={(e) => setNewDbUrl(e.target.value)}
+                    className="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500 font-mono text-slate-800 placeholder:text-slate-400"
+                    placeholder="postgresql://user:password@ep-xxxx-xxxx.region.pooler.neon.tech/neondb?sslmode=require"
+                  />
+                  <span className="text-[10px] text-slate-400 block leading-relaxed font-bold">
+                    Provide a valid postgresql:// connection string. This can be a free tier from Neon, Supabase, Aiven, or similar. SSL mode require is recommended.
+                  </span>
+                </div>
+
+                <div className="pt-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleReconnectDb}
+                    disabled={isUpdatingDb || !newDbUrl.trim()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  >
+                    {isUpdatingDb ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Connecting & Migrating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>Connect & Migrate Current Data</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Troubleshooting Instructions */}
+              <div className="p-3.5 border border-amber-100 bg-amber-50/40 rounded-xl text-amber-900 space-y-1.5">
+                <span className="text-xs font-black text-amber-900 block">⚠️ Why did my data reset?</span>
+                <p className="text-[11px] leading-relaxed font-bold text-amber-800">
+                  Because this application is hosted inside a container (Google Cloud Run), any files written to local disk (like the local database file) are ephemeral. Whenever the system is redeployed or restarts, the container is destroyed and replaced, which wipes all local file changes.
+                </p>
+                <p className="text-[11px] leading-relaxed font-bold text-amber-800">
+                  By configuring a cloud PostgreSQL instance above, your monitor parameters, subscription tiers, logs, and account records will be kept completely safe on external storage and will persist flawlessly across all future redeployments!
+                </p>
               </div>
             </div>
           )}

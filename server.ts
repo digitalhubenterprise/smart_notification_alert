@@ -9,7 +9,7 @@ import { PassThrough } from "stream";
 import cron from "node-cron";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Payment, initializeDb } from "./server/db.js";
+import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Payment, initializeDb, getDbStatus, reconnectDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
 
@@ -1528,6 +1528,36 @@ async function startServer() {
       ];
       writeDb(db);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin DB Status
+  app.get("/api/admin/db-status", (req, res) => {
+    try {
+      res.json(getDbStatus());
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin DB Reconnect and Migrate
+  app.post("/api/admin/db-reconnect", async (req, res) => {
+    try {
+      const { databaseUrl } = req.body;
+      if (!databaseUrl || !databaseUrl.trim()) {
+        return res.status(400).json({ error: "Database connection URL is required." });
+      }
+      
+      const result = await reconnectDb(databaseUrl.trim());
+      if (result.success) {
+        addSystemLog("info", "PostgreSQL database connected and state synchronized successfully.");
+        res.json({ success: true });
+      } else {
+        addSystemLog("error", `Failed to connect to PostgreSQL database: ${result.error}`);
+        res.status(400).json({ error: result.error });
+      }
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
