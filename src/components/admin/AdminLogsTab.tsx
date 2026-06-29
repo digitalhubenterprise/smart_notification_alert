@@ -1,6 +1,6 @@
 import { apiFetch } from "../../lib/api";
 import React, { useState, useEffect } from "react";
-import { Terminal, Search } from "lucide-react";
+import { Terminal, Search, Download } from "lucide-react";
 import { SystemLog } from "../../types.ts";
 
 interface AdminLogsTabProps {
@@ -46,6 +46,54 @@ export default function AdminLogsTab({
     }
   };
 
+  const handleDownloadCSV = () => {
+    try {
+      const logsToExport = searchQuery ? filteredLogs : systemLogs;
+      if (logsToExport.length === 0) {
+        onError("No audit logs available to export.");
+        return;
+      }
+
+      // Headers for security auditing and compliance
+      const headers = ["Log ID", "Level", "Timestamp (Local)", "Timestamp (ISO/UTC)", "Event Message"];
+
+      // Process rows, escaping message field to ensure correct CSV parsing
+      const rows = logsToExport.map((log) => {
+        const escapedMessage = `"${log.message.replace(/"/g, '""')}"`;
+        const localTime = new Date(log.timestamp).toLocaleString();
+        const isoTime = new Date(log.timestamp).toISOString();
+        return [
+          log.id,
+          log.level.toUpperCase(),
+          localTime,
+          isoTime,
+          escapedMessage
+        ];
+      });
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(","))
+      ].join("\r\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      const suffix = searchQuery ? "filtered" : "full";
+      link.setAttribute("download", `uptimepro_audit_trail_${suffix}_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      onSuccess(`Successfully downloaded ${logsToExport.length} audit trail records as CSV.`);
+    } catch (err: any) {
+      console.error(err);
+      onError("An error occurred while generating the CSV file.");
+    }
+  };
+
   const filteredLogs = systemLogs.filter((log) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -76,6 +124,15 @@ export default function AdminLogsTab({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Live Logs</span>
             </div>
+            <button
+              id="download-logs-csv-btn"
+              onClick={handleDownloadCSV}
+              className="px-3 py-1.5 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-[10px] rounded-lg transition-all font-black flex items-center gap-1.5 cursor-pointer"
+              title="Download audit logs as CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download CSV
+            </button>
             <button
               onClick={handleClearLogs}
               className="px-3 py-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/50 text-rose-400 text-[10px] rounded-lg transition-all font-black cursor-pointer"

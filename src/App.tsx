@@ -227,6 +227,69 @@ export default function App() {
     }
   }, []);
 
+  // Automatic Session Timeout for Admin Dashboard (30 minutes of inactivity)
+  useEffect(() => {
+    // Only monitor inactivity if the user is logged in as an admin
+    if (!isLoggedIn || activeRole !== "admin") {
+      return;
+    }
+
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    let lastActive = Date.now();
+
+    const updateActivity = () => {
+      lastActive = Date.now();
+    };
+
+    // Events to monitor user interactions
+    const activityEvents = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    // Listen for activity events
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, updateActivity, { passive: true });
+    });
+
+    // Check for inactivity every 10 seconds
+    const intervalId = setInterval(() => {
+      const timeSinceLastActive = Date.now() - lastActive;
+      if (timeSinceLastActive >= TIMEOUT_MS) {
+        // Clear all auth state and redirect to login page
+        setIsLoggedIn(false);
+        setActivePage("login");
+        setIsSidebarOpen(false);
+        setActiveRole("subscriber");
+        setSubscriberTab("monitors");
+        setAdminTab("settings");
+        localStorage.removeItem("uptimepro_isLoggedIn");
+        localStorage.removeItem("uptimepro_activePage");
+        localStorage.removeItem("uptimepro_activeRole");
+        localStorage.removeItem("uptimepro_subscriberTab");
+        localStorage.removeItem("uptimepro_adminTab");
+        localStorage.removeItem("uptimepro_authToken");
+        
+        setAuthError("Your admin session has expired due to 30 minutes of inactivity. Please log in again.");
+        
+        // Trigger background api logout
+        apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      }
+    }, 10000); // 10 second check cycle
+
+    return () => {
+      // Cleanup event listeners and interval timer
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, updateActivity);
+      });
+      clearInterval(intervalId);
+    };
+  }, [isLoggedIn, activeRole]);
+
   // Cryptographic Authentication Handlers
 
   // Login Handler

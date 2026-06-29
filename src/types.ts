@@ -51,6 +51,7 @@ export interface AlertConfig {
   smtp_from: string;
   alerts_enabled: boolean;
   receiver_wallet_address: string;
+  log_retention_hours?: number;
   site_title?: string;
   site_seo_desc?: string;
   site_seo_keywords?: string;
