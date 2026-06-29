@@ -25,6 +25,20 @@
       "password_hash": "d4c1f9baccb8e5c1e11fe9f62f55881fcc5d90d734cfc5c35e078a93b1b73b00",
       "password_salt": "775125c93d66fa83974b440e066b149b",
       "apiToken": "bickwyoeiumkhd6t0x5ouc"
+    },
+    {
+      "id": "user-34bc4929f81c",
+      "name": "amberfilia@wshu.net",
+      "email": "amberfilia@wshu.net",
+      "phone": "01672214141",
+      "password_hash": "892fe24ea6eadf4a7703094e6d55cae774a102cb076a6162ac272cb1a78a4b97",
+      "password_salt": "e33b803497bbf4f9ebec9bb6aa3b79ad",
+      "balance": 10,
+      "wallet_address": "0x230cdeff0d0355442ae6ff29783a3323105b4fe8",
+      "plan_id": "free",
+      "createdAt": "2026-06-29T08:23:48.612Z",
+      "telegram_chat_id": "",
+      "apiToken": "scnukaj3rr9ipw9o9jxog"
     }
   ],
   "monitors": [
@@ -36,7 +50,7 @@
       "monitor_type": "HTTP",
       "interval_sec": 10,
       "status": "up",
-      "last_check": "2026-06-29T07:59:07.368Z",
+      "last_check": "2026-06-29T08:30:44.309Z",
       "consecutive_failures": 0,
       "alert_sent": false
     },
@@ -47,10 +61,10 @@
       "url": "https://api.github.com",
       "monitor_type": "HTTP",
       "interval_sec": 10,
-      "status": "down",
-      "last_check": "2026-06-29T07:59:07.430Z",
-      "consecutive_failures": 108,
-      "alert_sent": true
+      "status": "up",
+      "last_check": "2026-06-29T08:30:44.401Z",
+      "consecutive_failures": 0,
+      "alert_sent": false
     },
     {
       "id": "monitor-broken",
@@ -60,12 +74,4847 @@
       "monitor_type": "HTTP",
       "interval_sec": 10,
       "status": "down",
-      "last_check": "2026-06-29T07:59:07.313Z",
-      "consecutive_failures": 1101,
+      "last_check": "2026-06-29T08:30:44.265Z",
+      "consecutive_failures": 1287,
       "alert_sent": true
     }
   ],
   "logs": [
+    {
+      "id": "log-1782721844412-omk1",
+      "monitor_id": "monitor-github",
+      "response_time": 154,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:44.412Z"
+    },
+    {
+      "id": "log-1782721844309-rs4v",
+      "monitor_id": "monitor-google",
+      "response_time": 62,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:44.309Z"
+    },
+    {
+      "id": "log-1782721844265-amy3",
+      "monitor_id": "monitor-broken",
+      "response_time": 18,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:44.265Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721834182-69br",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:34.182Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721834128-tw9c",
+      "monitor_id": "monitor-google",
+      "response_time": 75,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:34.128Z"
+    },
+    {
+      "id": "log-1782721834074-sjeq",
+      "monitor_id": "monitor-broken",
+      "response_time": 21,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:34.074Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721823942-u76u",
+      "monitor_id": "monitor-github",
+      "response_time": 157,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:23.942Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721823916-uw6k",
+      "monitor_id": "monitor-google",
+      "response_time": 138,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:23.916Z"
+    },
+    {
+      "id": "log-1782721823813-w6lr",
+      "monitor_id": "monitor-broken",
+      "response_time": 27,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:23.813Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721812441-4038",
+      "monitor_id": "monitor-github",
+      "response_time": 156,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:12.441Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721812361-bbrh",
+      "monitor_id": "monitor-google",
+      "response_time": 76,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:12.361Z"
+    },
+    {
+      "id": "log-1782721812300-50kq",
+      "monitor_id": "monitor-broken",
+      "response_time": 15,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:12.300Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721802221-2jri",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:02.221Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721802155-2f7m",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:30:02.155Z"
+    },
+    {
+      "id": "log-1782721802107-htx0",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:30:02.107Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721792037-ev33",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:52.037Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721791959-0ve1",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:51.959Z"
+    },
+    {
+      "id": "log-1782721791926-m4qp",
+      "monitor_id": "monitor-broken",
+      "response_time": 14,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:51.926Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721781848-z6g8",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:41.848Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721781783-4p6l",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:41.783Z"
+    },
+    {
+      "id": "log-1782721781739-2npc",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:41.739Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721771668-4c5x",
+      "monitor_id": "monitor-github",
+      "response_time": 131,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:31.668Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721771588-jc9o",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:31.588Z"
+    },
+    {
+      "id": "log-1782721771545-0kpj",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:31.545Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721761474-mjt1",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:21.474Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721761410-uqts",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:21.410Z"
+    },
+    {
+      "id": "log-1782721761362-4sh0",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:21.362Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721751286-9fdg",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:11.286Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721751217-7dpp",
+      "monitor_id": "monitor-google",
+      "response_time": 48,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:11.217Z"
+    },
+    {
+      "id": "log-1782721751176-3xo7",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:11.176Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721741104-7qj4",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:01.104Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721741032-ele1",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:29:01.032Z"
+    },
+    {
+      "id": "log-1782721740986-ujke",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:29:00.986Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721730918-bsdv",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:50.918Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721730854-5ol7",
+      "monitor_id": "monitor-google",
+      "response_time": 60,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:28:50.854Z"
+    },
+    {
+      "id": "log-1782721730800-c7wy",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:50.800Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721720732-vex0",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:40.732Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721720671-apwf",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:28:40.671Z"
+    },
+    {
+      "id": "log-1782721720620-g8l7",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:40.620Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721710549-tv19",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:30.549Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721710482-jy31",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:28:30.482Z"
+    },
+    {
+      "id": "log-1782721710437-wwu4",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:30.437Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721700370-z2de",
+      "monitor_id": "monitor-github",
+      "response_time": 114,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:20.370Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721700311-iykg",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:28:20.311Z"
+    },
+    {
+      "id": "log-1782721700262-t4um",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:20.262Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721690193-erp0",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:10.193Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721690116-jobc",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:28:10.116Z"
+    },
+    {
+      "id": "log-1782721690069-0v8f",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:10.069Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721680001-ekqt",
+      "monitor_id": "monitor-github",
+      "response_time": 115,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:28:00.001Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721679943-bhq3",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:59.943Z"
+    },
+    {
+      "id": "log-1782721679893-7k72",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:59.893Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721669824-ymfz",
+      "monitor_id": "monitor-github",
+      "response_time": 137,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:49.824Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721669733-h4zn",
+      "monitor_id": "monitor-google",
+      "response_time": 46,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:49.733Z"
+    },
+    {
+      "id": "log-1782721669696-oh99",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:49.696Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721659624-o4j9",
+      "monitor_id": "monitor-github",
+      "response_time": 134,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:39.624Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721659561-zff5",
+      "monitor_id": "monitor-google",
+      "response_time": 72,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:39.561Z"
+    },
+    {
+      "id": "log-1782721659525-onj8",
+      "monitor_id": "monitor-broken",
+      "response_time": 35,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:39.525Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721649423-19hw",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:29.423Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721649361-mbw7",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:29.361Z"
+    },
+    {
+      "id": "log-1782721649311-r2ob",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:29.311Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721639240-hfs4",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:19.240Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721639180-21u5",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:19.180Z"
+    },
+    {
+      "id": "log-1782721639127-2ze5",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:19.127Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721629059-anvb",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:09.059Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721628996-lc4u",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:27:08.996Z"
+    },
+    {
+      "id": "log-1782721628948-3jqv",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:27:08.948Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721618878-9hph",
+      "monitor_id": "monitor-github",
+      "response_time": 131,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:58.878Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721618801-h4nc",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:58.801Z"
+    },
+    {
+      "id": "log-1782721618755-dcp6",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:58.755Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721608685-abmn",
+      "monitor_id": "monitor-github",
+      "response_time": 130,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:48.685Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721608610-8gkv",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:48.610Z"
+    },
+    {
+      "id": "log-1782721608560-8i44",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:48.560Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721598493-l4x7",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:38.493Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721598457-oc90",
+      "monitor_id": "monitor-google",
+      "response_time": 81,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:38.457Z"
+    },
+    {
+      "id": "log-1782721598381-ujui",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:38.381Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721588314-hl4v",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:28.314Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721588252-x7b4",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:28.252Z"
+    },
+    {
+      "id": "log-1782721588202-au97",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:28.202Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721578135-6f65",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:18.135Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721578063-oroz",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:18.063Z"
+    },
+    {
+      "id": "log-1782721578027-buc0",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:18.027Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721567954-b6ks",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:07.954Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721567889-b3pp",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:26:07.889Z"
+    },
+    {
+      "id": "log-1782721567844-veua",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:26:07.844Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721557772-35pn",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:57.772Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721557695-ryhg",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:57.695Z"
+    },
+    {
+      "id": "log-1782721557659-mwcz",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:57.659Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721547584-ntzo",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:47.584Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721547534-rm4d",
+      "monitor_id": "monitor-google",
+      "response_time": 72,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:47.534Z"
+    },
+    {
+      "id": "log-1782721547470-0lnt",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:47.470Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721537398-psrk",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:37.398Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721537334-27xj",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:37.334Z"
+    },
+    {
+      "id": "log-1782721537288-t0hq",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:37.288Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721527217-obnd",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:27.217Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721527148-esef",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:27.148Z"
+    },
+    {
+      "id": "log-1782721527098-t3rz",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:27.098Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721517028-92rm",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:17.028Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721516964-zx3m",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:16.964Z"
+    },
+    {
+      "id": "log-1782721516916-6m3k",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:16.916Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721506843-dc2m",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:06.843Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721506779-7c0q",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:25:06.779Z"
+    },
+    {
+      "id": "log-1782721506734-zo4d",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:25:06.734Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721496661-yk20",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:56.661Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721496597-66v2",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:56.597Z"
+    },
+    {
+      "id": "log-1782721496547-v9i4",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:56.547Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721486479-lyye",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:46.479Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721486402-2z10",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:46.402Z"
+    },
+    {
+      "id": "log-1782721486365-5ltz",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:46.365Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721476292-8d5e",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:36.292Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721476232-0vjf",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:36.232Z"
+    },
+    {
+      "id": "log-1782721476180-f4wl",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:36.180Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721466112-7qu1",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:26.112Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721466048-kevi",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:26.048Z"
+    },
+    {
+      "id": "log-1782721466001-85nw",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:26.001Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721455931-s3ox",
+      "monitor_id": "monitor-github",
+      "response_time": 133,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:15.931Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721455860-lidn",
+      "monitor_id": "monitor-google",
+      "response_time": 62,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:15.860Z"
+    },
+    {
+      "id": "log-1782721455805-2oxw",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:15.805Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721445735-4n4c",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:05.735Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721445672-38ni",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:24:05.672Z"
+    },
+    {
+      "id": "log-1782721445622-bmq3",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:24:05.622Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721435553-9az5",
+      "monitor_id": "monitor-github",
+      "response_time": 165,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:55.553Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721435451-1kxu",
+      "monitor_id": "monitor-google",
+      "response_time": 63,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:55.451Z"
+    },
+    {
+      "id": "log-1782721435395-iicr",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:55.395Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721425325-jx6p",
+      "monitor_id": "monitor-github",
+      "response_time": 146,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:45.325Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721425246-taik",
+      "monitor_id": "monitor-google",
+      "response_time": 67,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:45.246Z"
+    },
+    {
+      "id": "log-1782721425193-hc87",
+      "monitor_id": "monitor-broken",
+      "response_time": 14,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:45.193Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721415114-a0qq",
+      "monitor_id": "monitor-broken",
+      "response_time": 137,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:35.114Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721415093-78kw",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:35.093Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721415027-31w0",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:35.027Z"
+    },
+    {
+      "id": "log-1782721404911-uxwf",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:24.911Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721404833-084v",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:24.833Z"
+    },
+    {
+      "id": "log-1782721404796-mpuu",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:24.796Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721394723-b2bb",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:14.723Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721394663-323r",
+      "monitor_id": "monitor-google",
+      "response_time": 62,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:14.663Z"
+    },
+    {
+      "id": "log-1782721394613-3a88",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:14.613Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721384537-onyr",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:04.537Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721384475-lpbk",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:23:04.475Z"
+    },
+    {
+      "id": "log-1782721384423-7otq",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:23:04.423Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721374352-3obd",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:54.352Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721374283-v5qr",
+      "monitor_id": "monitor-google",
+      "response_time": 49,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:54.283Z"
+    },
+    {
+      "id": "log-1782721374241-8jqe",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:54.241Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721364172-29wt",
+      "monitor_id": "monitor-github",
+      "response_time": 115,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:44.172Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721364114-brrv",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:44.114Z"
+    },
+    {
+      "id": "log-1782721364062-cn1x",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:44.062Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721353995-6urf",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:33.995Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721353919-y5y5",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:33.919Z"
+    },
+    {
+      "id": "log-1782721353874-trtm",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:33.874Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721343804-3so7",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:23.804Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721343741-8i2s",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:23.741Z"
+    },
+    {
+      "id": "log-1782721343693-gwsb",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:23.693Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721333624-yklm",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:13.624Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721333545-v6ci",
+      "monitor_id": "monitor-google",
+      "response_time": 47,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:13.545Z"
+    },
+    {
+      "id": "log-1782721333507-kn8c",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:13.507Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721323437-snle",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:03.437Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721323380-wuxc",
+      "monitor_id": "monitor-google",
+      "response_time": 61,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:22:03.380Z"
+    },
+    {
+      "id": "log-1782721323328-lf90",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:22:03.328Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721313256-0gwe",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:53.256Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721313190-koqz",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:53.190Z"
+    },
+    {
+      "id": "log-1782721313143-u157",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:53.143Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721303076-bp1v",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:43.076Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721303019-36km",
+      "monitor_id": "monitor-google",
+      "response_time": 64,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:43.019Z"
+    },
+    {
+      "id": "log-1782721302960-1bqo",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:42.960Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721292891-wbsp",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:32.891Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721292825-yj91",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:32.825Z"
+    },
+    {
+      "id": "log-1782721292771-vqk7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:32.771Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721282701-6g0h",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:22.701Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721282632-iu9x",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:22.632Z"
+    },
+    {
+      "id": "log-1782721282588-du95",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:22.588Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721272517-7dui",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:12.517Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721272452-5fxk",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:12.452Z"
+    },
+    {
+      "id": "log-1782721272401-sgoq",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:12.401Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721262333-jlo1",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:02.333Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721262266-ge5m",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:21:02.266Z"
+    },
+    {
+      "id": "log-1782721262223-s0b5",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:21:02.223Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721252150-2qbm",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:52.150Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721252079-2ffp",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:52.079Z"
+    },
+    {
+      "id": "log-1782721252037-mf1d",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:52.037Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721241967-yo7b",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:41.967Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721241898-d452",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:41.898Z"
+    },
+    {
+      "id": "log-1782721241851-9xb2",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:41.851Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721231783-j7ho",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:31.783Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721231718-bb92",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:31.718Z"
+    },
+    {
+      "id": "log-1782721231672-6b67",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:31.672Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721221601-bs02",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:21.601Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721221537-cs32",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:21.537Z"
+    },
+    {
+      "id": "log-1782721221490-kqrl",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:21.490Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721211420-quxt",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:11.420Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721211351-14v7",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:11.351Z"
+    },
+    {
+      "id": "log-1782721211304-67xx",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:11.304Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721201234-tz3s",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:01.234Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721201165-fk06",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:20:01.165Z"
+    },
+    {
+      "id": "log-1782721201118-ux58",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:20:01.118Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721191051-32vb",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:51.051Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721190982-ziuu",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:50.982Z"
+    },
+    {
+      "id": "log-1782721190939-gqxr",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:50.939Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721180867-upye",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:40.867Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721180804-uvai",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:40.804Z"
+    },
+    {
+      "id": "log-1782721180752-zk7e",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:40.753Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721170678-x5qt",
+      "monitor_id": "monitor-github",
+      "response_time": 127,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:30.678Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721170606-sz5o",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:30.606Z"
+    },
+    {
+      "id": "log-1782721170556-aerw",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:30.556Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721160488-2mwp",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:20.488Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721160419-87cr",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:20.419Z"
+    },
+    {
+      "id": "log-1782721160372-syy5",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:20.372Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721150304-xswy",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:10.304Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721150241-6sur",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:10.241Z"
+    },
+    {
+      "id": "log-1782721150191-kab2",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:10.191Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721140121-xwy7",
+      "monitor_id": "monitor-github",
+      "response_time": 135,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:19:00.121Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721140036-p5n5",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:19:00.036Z"
+    },
+    {
+      "id": "log-1782721139991-nq63",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:59.991Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721129924-dz4q",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:49.924Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721129852-qwfe",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:18:49.852Z"
+    },
+    {
+      "id": "log-1782721129805-2v2z",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:49.805Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721119735-qh5t",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:39.735Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721119656-ef7n",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:18:39.656Z"
+    },
+    {
+      "id": "log-1782721119614-ymj7",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:39.614Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721109544-2v2a",
+      "monitor_id": "monitor-github",
+      "response_time": 127,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:29.544Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721109481-rgr0",
+      "monitor_id": "monitor-google",
+      "response_time": 63,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:18:29.481Z"
+    },
+    {
+      "id": "log-1782721109424-uefw",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:29.424Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721099356-yyro",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:19.356Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721099288-foil",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:18:19.288Z"
+    },
+    {
+      "id": "log-1782721099243-uptg",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:19.243Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721089171-9v76",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:09.171Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721089107-qz59",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:18:09.107Z"
+    },
+    {
+      "id": "log-1782721089057-gomz",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:18:09.057Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721078990-l569",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:58.990Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721078923-zs51",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:58.923Z"
+    },
+    {
+      "id": "log-1782721078877-pdlf",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:58.878Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721068809-49gc",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:48.809Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721068743-52dr",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:48.743Z"
+    },
+    {
+      "id": "log-1782721068690-egb7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:48.690Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721058619-90f1",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:38.619Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721058553-m2ss",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:38.553Z"
+    },
+    {
+      "id": "log-1782721058503-pi8j",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:38.503Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721048433-pp71",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:28.433Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721048371-zson",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:28.371Z"
+    },
+    {
+      "id": "log-1782721048323-6nnf",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:28.323Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721038253-ih3k",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:18.253Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721038190-pw8x",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:18.190Z"
+    },
+    {
+      "id": "log-1782721038142-b1u7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:18.142Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721028074-e9qd",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:08.074Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721028022-i4kd",
+      "monitor_id": "monitor-google",
+      "response_time": 67,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:17:08.022Z"
+    },
+    {
+      "id": "log-1782721027964-scw8",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:17:07.964Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721017892-qwyw",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:57.892Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721017827-ehug",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:57.827Z"
+    },
+    {
+      "id": "log-1782721017777-i8gl",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:57.777Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782721007709-ut7r",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:47.709Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782721007643-menl",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:47.643Z"
+    },
+    {
+      "id": "log-1782721007599-kqha",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:47.599Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720997528-ug7y",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:37.528Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720997462-7zxj",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:37.462Z"
+    },
+    {
+      "id": "log-1782720997409-ffkv",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:37.409Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720987338-q13w",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:27.338Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720987268-y1bs",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:27.268Z"
+    },
+    {
+      "id": "log-1782720987233-t8q8",
+      "monitor_id": "monitor-broken",
+      "response_time": 17,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:27.233Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720977145-3raa",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:17.145Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720977074-nj3i",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:17.074Z"
+    },
+    {
+      "id": "log-1782720977025-o9wi",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:17.025Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720966954-61tv",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:06.954Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720966891-8sfl",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:16:06.892Z"
+    },
+    {
+      "id": "log-1782720966842-hejf",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:16:06.842Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720956773-zrqy",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:56.773Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720956706-fpo3",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:56.706Z"
+    },
+    {
+      "id": "log-1782720956655-jx70",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:56.655Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720946587-a9wl",
+      "monitor_id": "monitor-github",
+      "response_time": 127,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:46.587Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720946509-vaxx",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:46.509Z"
+    },
+    {
+      "id": "log-1782720946466-vlie",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:46.466Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720936396-q5jy",
+      "monitor_id": "monitor-github",
+      "response_time": 146,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:36.396Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720936303-jnda",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:36.303Z"
+    },
+    {
+      "id": "log-1782720936255-56w5",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:36.255Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720926187-bwxx",
+      "monitor_id": "monitor-github",
+      "response_time": 137,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:26.187Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720926102-7xbw",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:26.103Z"
+    },
+    {
+      "id": "log-1782720926055-sz98",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:26.055Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720915987-dais",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:15.987Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720915927-jg6n",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:15.927Z"
+    },
+    {
+      "id": "log-1782720915879-kdst",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:15.879Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720905806-q6ki",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:05.806Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720905742-3u62",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:15:05.742Z"
+    },
+    {
+      "id": "log-1782720905695-z6a4",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:15:05.695Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720895623-50r3",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:55.623Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720895569-ksug",
+      "monitor_id": "monitor-google",
+      "response_time": 72,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:55.569Z"
+    },
+    {
+      "id": "log-1782720895504-9rzi",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:55.504Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720885434-rx1r",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:45.434Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720885366-tzug",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:45.366Z"
+    },
+    {
+      "id": "log-1782720885315-sr2f",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:45.315Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720875245-jd32",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:35.245Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720875180-4vnm",
+      "monitor_id": "monitor-google",
+      "response_time": 64,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:35.180Z"
+    },
+    {
+      "id": "log-1782720875122-g372",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:35.122Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720865053-a95i",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:25.053Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720864991-msn1",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:24.991Z"
+    },
+    {
+      "id": "log-1782720864945-ytzj",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:24.945Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720854873-90bm",
+      "monitor_id": "monitor-github",
+      "response_time": 136,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:14.873Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720854815-qves",
+      "monitor_id": "monitor-google",
+      "response_time": 78,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:14.815Z"
+    },
+    {
+      "id": "log-1782720854749-s3ot",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:14.749Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720844674-wdn5",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:04.674Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720844607-jb2i",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:14:04.607Z"
+    },
+    {
+      "id": "log-1782720844558-0oua",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:14:04.558Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720834484-sdxt",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:54.484Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720834415-c3w9",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:54.415Z"
+    },
+    {
+      "id": "log-1782720834370-93lm",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:54.370Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720824302-j4kt",
+      "monitor_id": "monitor-github",
+      "response_time": 128,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:44.302Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720824223-52c8",
+      "monitor_id": "monitor-google",
+      "response_time": 49,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:44.223Z"
+    },
+    {
+      "id": "log-1782720824181-cr13",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:44.181Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720814112-wxjb",
+      "monitor_id": "monitor-github",
+      "response_time": 128,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:34.112Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720814042-dxgu",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:34.042Z"
+    },
+    {
+      "id": "log-1782720813993-46hm",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:33.993Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720803920-hdrw",
+      "monitor_id": "monitor-github",
+      "response_time": 135,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:23.920Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720803838-is27",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:23.838Z"
+    },
+    {
+      "id": "log-1782720803792-qwd4",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:23.793Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720793721-5xb3",
+      "monitor_id": "monitor-github",
+      "response_time": 133,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:13.721Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720793652-4vsq",
+      "monitor_id": "monitor-google",
+      "response_time": 64,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:13.652Z"
+    },
+    {
+      "id": "log-1782720793600-ausj",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:13.601Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720783524-h4sd",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:03.524Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720783459-kzsc",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:13:03.459Z"
+    },
+    {
+      "id": "log-1782720783411-17vd",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:13:03.411Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720773344-nysj",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:53.344Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720773277-3sx5",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:53.277Z"
+    },
+    {
+      "id": "log-1782720773229-zl0w",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:53.229Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720763162-gbyi",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:43.162Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720763103-r2jl",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:43.103Z"
+    },
+    {
+      "id": "log-1782720763050-omno",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:43.050Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720752981-4u6o",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:32.981Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720752918-mbb9",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:32.918Z"
+    },
+    {
+      "id": "log-1782720752870-jnm7",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:32.870Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720742800-7q50",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:22.800Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720742743-mecj",
+      "monitor_id": "monitor-google",
+      "response_time": 62,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:22.743Z"
+    },
+    {
+      "id": "log-1782720742696-tj46",
+      "monitor_id": "monitor-broken",
+      "response_time": 15,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:22.696Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720732617-ldt1",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:12.617Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720732548-oakm",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:12.548Z"
+    },
+    {
+      "id": "log-1782720732498-nrlq",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:12.498Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720722430-juxn",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:02.430Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720722368-9b88",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:12:02.368Z"
+    },
+    {
+      "id": "log-1782720722314-xi0j",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:12:02.314Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720712243-9s92",
+      "monitor_id": "monitor-github",
+      "response_time": 136,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:52.243Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720712183-r87w",
+      "monitor_id": "monitor-google",
+      "response_time": 76,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:52.183Z"
+    },
+    {
+      "id": "log-1782720712112-g69c",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:52.112Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720702044-snjg",
+      "monitor_id": "monitor-github",
+      "response_time": 132,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:42.044Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720701967-9cs6",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:41.967Z"
+    },
+    {
+      "id": "log-1782720701919-0e72",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:41.919Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720691847-w31z",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:31.847Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720691775-quna",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:31.775Z"
+    },
+    {
+      "id": "log-1782720691734-7grl",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:31.734Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720681662-ghiw",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:21.662Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720681591-68qe",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:21.591Z"
+    },
+    {
+      "id": "log-1782720681548-0ibf",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:21.548Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720671476-e6br",
+      "monitor_id": "monitor-github",
+      "response_time": 131,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:11.476Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720671427-g7vj",
+      "monitor_id": "monitor-google",
+      "response_time": 82,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:11.427Z"
+    },
+    {
+      "id": "log-1782720671351-1nn7",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:11.351Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720661272-yhtr",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:01.272Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720661207-xuak",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:11:01.207Z"
+    },
+    {
+      "id": "log-1782720661158-syx7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:11:01.158Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720651089-9c46",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:51.089Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720651029-8cu5",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:51.029Z"
+    },
+    {
+      "id": "log-1782720650979-dkaw",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:50.979Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720640908-aydn",
+      "monitor_id": "monitor-github",
+      "response_time": 128,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:40.908Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720640838-6ygv",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:40.838Z"
+    },
+    {
+      "id": "log-1782720640794-1vw4",
+      "monitor_id": "monitor-broken",
+      "response_time": 14,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:40.794Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720630717-ss8i",
+      "monitor_id": "monitor-github",
+      "response_time": 132,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:30.717Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720630646-og2t",
+      "monitor_id": "monitor-google",
+      "response_time": 62,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:30.647Z"
+    },
+    {
+      "id": "log-1782720630593-yb9z",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:30.593Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720620521-s4c3",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:20.521Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720620455-au4r",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:20.455Z"
+    },
+    {
+      "id": "log-1782720620409-vqj3",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:20.409Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720610337-5e5b",
+      "monitor_id": "monitor-github",
+      "response_time": 130,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:10.337Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720610265-ma13",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:10.265Z"
+    },
+    {
+      "id": "log-1782720610212-20hr",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:10.212Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720600143-3c14",
+      "monitor_id": "monitor-github",
+      "response_time": 130,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:00.143Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720600065-h776",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:10:00.065Z"
+    },
+    {
+      "id": "log-1782720600024-xzqj",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:10:00.024Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720589949-3d1q",
+      "monitor_id": "monitor-github",
+      "response_time": 140,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:49.949Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720589863-pel9",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:09:49.863Z"
+    },
+    {
+      "id": "log-1782720589817-rl64",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:49.817Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720579748-st0k",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:39.748Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720579685-gpf6",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:09:39.685Z"
+    },
+    {
+      "id": "log-1782720579638-bly1",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:39.638Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720569567-8nna",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:29.567Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720569500-1blj",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:09:29.500Z"
+    },
+    {
+      "id": "log-1782720569453-i64w",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:29.453Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720559383-tkp6",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:19.383Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720559316-kxdt",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:09:19.316Z"
+    },
+    {
+      "id": "log-1782720559270-auge",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:19.270Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720549199-oq2n",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:09.199Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720549142-9twt",
+      "monitor_id": "monitor-google",
+      "response_time": 60,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:09:09.142Z"
+    },
+    {
+      "id": "log-1782720549087-rcm4",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:09:09.087Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720539016-y7wf",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:59.016Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720538946-cwth",
+      "monitor_id": "monitor-google",
+      "response_time": 48,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:58.946Z"
+    },
+    {
+      "id": "log-1782720538908-cgco",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:58.908Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720528837-zhfv",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:48.837Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720528769-iw9y",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:48.769Z"
+    },
+    {
+      "id": "log-1782720528722-2wcw",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:48.722Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720518649-7asq",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:38.649Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720518581-objd",
+      "monitor_id": "monitor-google",
+      "response_time": 48,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:38.581Z"
+    },
+    {
+      "id": "log-1782720518543-niqx",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:38.543Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720508471-j7m0",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:28.471Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720508404-bnal",
+      "monitor_id": "monitor-google",
+      "response_time": 49,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:28.404Z"
+    },
+    {
+      "id": "log-1782720508398-h5bu",
+      "monitor_id": "monitor-broken",
+      "response_time": 43,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:28.398Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720498292-6m39",
+      "monitor_id": "monitor-github",
+      "response_time": 144,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:18.292Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720498201-8kli",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:18.201Z"
+    },
+    {
+      "id": "log-1782720498152-ora7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:18.153Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720488083-fpqj",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:08.083Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720488019-49oj",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:08:08.019Z"
+    },
+    {
+      "id": "log-1782720487972-1cyc",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:08:07.972Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720477899-4rjg",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:57.899Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720477838-g14w",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:57.838Z"
+    },
+    {
+      "id": "log-1782720477788-1z5i",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:57.788Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720467718-6jco",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:47.718Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720467657-gs1v",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:47.657Z"
+    },
+    {
+      "id": "log-1782720467609-bqf7",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:47.609Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720457536-kye7",
+      "monitor_id": "monitor-github",
+      "response_time": 116,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:37.536Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720457476-3wmk",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:37.476Z"
+    },
+    {
+      "id": "log-1782720457425-ys8g",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:37.425Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720447358-1gc6",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:27.358Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720447288-z8y2",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:27.288Z"
+    },
+    {
+      "id": "log-1782720447244-ymmg",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:27.244Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720437174-7mg6",
+      "monitor_id": "monitor-github",
+      "response_time": 130,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:17.174Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720437119-um0x",
+      "monitor_id": "monitor-google",
+      "response_time": 75,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:17.119Z"
+    },
+    {
+      "id": "log-1782720437049-kndr",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:17.050Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720426979-f89z",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:06.979Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720426912-z450",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:07:06.912Z"
+    },
+    {
+      "id": "log-1782720426868-si5v",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:07:06.868Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720416797-92qg",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:56.797Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720416737-9kut",
+      "monitor_id": "monitor-google",
+      "response_time": 63,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:56.737Z"
+    },
+    {
+      "id": "log-1782720416688-18fb",
+      "monitor_id": "monitor-broken",
+      "response_time": 14,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:56.688Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720406611-tnfe",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:46.611Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720406533-m8s3",
+      "monitor_id": "monitor-google",
+      "response_time": 48,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:46.533Z"
+    },
+    {
+      "id": "log-1782720406492-l536",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:46.493Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720396423-r3pr",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:36.423Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720396352-mzrc",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:36.352Z"
+    },
+    {
+      "id": "log-1782720396310-48o8",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:36.310Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720386239-pglq",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:26.239Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720386171-a76o",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:26.171Z"
+    },
+    {
+      "id": "log-1782720386129-brs6",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:26.129Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720376051-1idq",
+      "monitor_id": "monitor-github",
+      "response_time": 130,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:16.051Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720375981-8f35",
+      "monitor_id": "monitor-google",
+      "response_time": 60,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:15.981Z"
+    },
+    {
+      "id": "log-1782720375931-pwpy",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:15.931Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720365859-3zck",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:05.859Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720365805-r1j3",
+      "monitor_id": "monitor-google",
+      "response_time": 76,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:06:05.805Z"
+    },
+    {
+      "id": "log-1782720365738-4t8u",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:06:05.738Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720355666-ncoj",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:55.666Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720355607-c9wi",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:55.607Z"
+    },
+    {
+      "id": "log-1782720355557-fl3g",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:55.557Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720345486-fdfw",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:45.486Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720345417-hwj2",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:45.417Z"
+    },
+    {
+      "id": "log-1782720345371-zf51",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:45.371Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720335296-jj8w",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:35.297Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720335225-x666",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:35.225Z"
+    },
+    {
+      "id": "log-1782720335177-3c38",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:35.177Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720325110-1oh0",
+      "monitor_id": "monitor-github",
+      "response_time": 125,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:25.110Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720325044-bhm9",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:25.044Z"
+    },
+    {
+      "id": "log-1782720324993-7e9h",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:24.993Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720314921-i869",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:14.921Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720314856-5biq",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:14.856Z"
+    },
+    {
+      "id": "log-1782720314811-tnli",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:14.811Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720304740-8kdf",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:04.740Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720304674-xilm",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:05:04.674Z"
+    },
+    {
+      "id": "log-1782720304628-ckc5",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:05:04.628Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720294561-wd16",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:54.561Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720294504-fwz7",
+      "monitor_id": "monitor-google",
+      "response_time": 60,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:54.504Z"
+    },
+    {
+      "id": "log-1782720294449-fmov",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:54.449Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720284382-w6mj",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:44.382Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720284316-5bl4",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:44.316Z"
+    },
+    {
+      "id": "log-1782720284270-fvjq",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:44.270Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720274202-k6er",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:34.202Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720274129-8gpx",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:34.129Z"
+    },
+    {
+      "id": "log-1782720274082-2m6x",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:34.082Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720264013-b3d8",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:24.013Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720263949-noor",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:23.949Z"
+    },
+    {
+      "id": "log-1782720263901-88j7",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:23.901Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720253835-rzvm",
+      "monitor_id": "monitor-github",
+      "response_time": 126,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:13.835Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720253762-twk8",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:13.762Z"
+    },
+    {
+      "id": "log-1782720253714-ur26",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:13.714Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720243647-ek7b",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:03.647Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720243578-wjgy",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:04:03.578Z"
+    },
+    {
+      "id": "log-1782720243530-f3zu",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:04:03.530Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720233463-l3e8",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:53.463Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720233394-acbi",
+      "monitor_id": "monitor-google",
+      "response_time": 52,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:53.394Z"
+    },
+    {
+      "id": "log-1782720233347-la0m",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:53.348Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720223282-px4f",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:43.282Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720223218-z8vv",
+      "monitor_id": "monitor-google",
+      "response_time": 56,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:43.218Z"
+    },
+    {
+      "id": "log-1782720223167-4rba",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:43.167Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720213099-9tfa",
+      "monitor_id": "monitor-github",
+      "response_time": 122,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:33.099Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720213028-eblz",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:33.028Z"
+    },
+    {
+      "id": "log-1782720212985-s1c8",
+      "monitor_id": "monitor-broken",
+      "response_time": 8,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:32.985Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720202915-tezx",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:22.915Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720202852-kqsp",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:22.852Z"
+    },
+    {
+      "id": "log-1782720202807-kws4",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:22.807Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720192736-3l2y",
+      "monitor_id": "monitor-github",
+      "response_time": 144,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:12.736Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720192647-0ktu",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:12.647Z"
+    },
+    {
+      "id": "log-1782720192598-s0ni",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:12.598Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720182528-pu33",
+      "monitor_id": "monitor-github",
+      "response_time": 118,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:02.528Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720182460-1ny1",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:03:02.460Z"
+    },
+    {
+      "id": "log-1782720182416-s72d",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:03:02.416Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720172348-j2yg",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:52.348Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720172282-x168",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:52.282Z"
+    },
+    {
+      "id": "log-1782720172234-sdev",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:52.234Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720162167-zh0r",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:42.167Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720162103-depx",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:42.103Z"
+    },
+    {
+      "id": "log-1782720162050-vd23",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:42.050Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720151983-hhdd",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:31.983Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720151917-m8ni",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:31.917Z"
+    },
+    {
+      "id": "log-1782720151872-glcl",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:31.872Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720141803-ld6l",
+      "monitor_id": "monitor-github",
+      "response_time": 120,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:21.803Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720141736-jjmc",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:21.736Z"
+    },
+    {
+      "id": "log-1782720141690-2q9o",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:21.690Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720131620-fiyx",
+      "monitor_id": "monitor-github",
+      "response_time": 134,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:11.620Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720131544-79u8",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:11.544Z"
+    },
+    {
+      "id": "log-1782720131492-sjv9",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:11.492Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720121424-fxx1",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:01.424Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720121361-k41x",
+      "monitor_id": "monitor-google",
+      "response_time": 57,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:02:01.361Z"
+    },
+    {
+      "id": "log-1782720121313-d4t2",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:02:01.313Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720111247-78qf",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:51.247Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720111239-ym76",
+      "monitor_id": "monitor-google",
+      "response_time": 115,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:51.239Z"
+    },
+    {
+      "id": "log-1782720111134-8io3",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:51.134Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720101056-8xi4",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:41.056Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720100977-g28p",
+      "monitor_id": "monitor-google",
+      "response_time": 50,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:40.977Z"
+    },
+    {
+      "id": "log-1782720100939-audz",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:40.939Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720090864-mw2t",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:30.864Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720090799-8azg",
+      "monitor_id": "monitor-google",
+      "response_time": 54,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:30.799Z"
+    },
+    {
+      "id": "log-1782720090754-6s4l",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:30.754Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720080681-h5zr",
+      "monitor_id": "monitor-github",
+      "response_time": 119,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:20.681Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720080617-qpsx",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:20.617Z"
+    },
+    {
+      "id": "log-1782720080568-qr7x",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:20.568Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720070493-0teh",
+      "monitor_id": "monitor-github",
+      "response_time": 117,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:10.493Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720070458-1eqn",
+      "monitor_id": "monitor-google",
+      "response_time": 82,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:10.458Z"
+    },
+    {
+      "id": "log-1782720070381-rlyn",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:10.381Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720060299-xp14",
+      "monitor_id": "monitor-github",
+      "response_time": 124,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:00.299Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720060226-8o4e",
+      "monitor_id": "monitor-google",
+      "response_time": 51,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:01:00.226Z"
+    },
+    {
+      "id": "log-1782720060181-8l4b",
+      "monitor_id": "monitor-broken",
+      "response_time": 6,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:01:00.181Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720050114-8wr1",
+      "monitor_id": "monitor-github",
+      "response_time": 137,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:50.114Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720050053-i85b",
+      "monitor_id": "monitor-google",
+      "response_time": 76,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:00:50.053Z"
+    },
+    {
+      "id": "log-1782720049984-cxxb",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:49.984Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720039914-y3om",
+      "monitor_id": "monitor-github",
+      "response_time": 134,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:39.914Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720039837-7z4w",
+      "monitor_id": "monitor-google",
+      "response_time": 58,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:00:39.837Z"
+    },
+    {
+      "id": "log-1782720039792-dser",
+      "monitor_id": "monitor-broken",
+      "response_time": 12,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:39.792Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720029716-5xgv",
+      "monitor_id": "monitor-github",
+      "response_time": 123,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:29.716Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720029646-kl7p",
+      "monitor_id": "monitor-google",
+      "response_time": 53,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:00:29.646Z"
+    },
+    {
+      "id": "log-1782720029599-rogn",
+      "monitor_id": "monitor-broken",
+      "response_time": 5,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:29.599Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720019533-hb9g",
+      "monitor_id": "monitor-github",
+      "response_time": 127,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:19.533Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720019471-aui6",
+      "monitor_id": "monitor-google",
+      "response_time": 66,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:00:19.471Z"
+    },
+    {
+      "id": "log-1782720019414-rror",
+      "monitor_id": "monitor-broken",
+      "response_time": 9,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:19.414Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782720009340-4336",
+      "monitor_id": "monitor-github",
+      "response_time": 133,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:09.340Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782720009287-53ue",
+      "monitor_id": "monitor-google",
+      "response_time": 80,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T08:00:09.287Z"
+    },
+    {
+      "id": "log-1782720009218-eh63",
+      "monitor_id": "monitor-broken",
+      "response_time": 11,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T08:00:09.218Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782719999144-tn1r",
+      "monitor_id": "monitor-github",
+      "response_time": 133,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:59.144Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782719999066-24mo",
+      "monitor_id": "monitor-google",
+      "response_time": 55,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T07:59:59.066Z"
+    },
+    {
+      "id": "log-1782719999019-fmki",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:59.019Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782719988948-f2t7",
+      "monitor_id": "monitor-github",
+      "response_time": 129,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:48.948Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782719988878-kxn0",
+      "monitor_id": "monitor-google",
+      "response_time": 59,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T07:59:48.878Z"
+    },
+    {
+      "id": "log-1782719988829-1dgz",
+      "monitor_id": "monitor-broken",
+      "response_time": 10,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:48.830Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782719978728-f117",
+      "monitor_id": "monitor-github",
+      "response_time": 182,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:38.728Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782719978655-7c4t",
+      "monitor_id": "monitor-google",
+      "response_time": 115,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T07:59:38.655Z"
+    },
+    {
+      "id": "log-1782719978580-njo1",
+      "monitor_id": "monitor-broken",
+      "response_time": 31,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:38.580Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782719967844-m04f",
+      "monitor_id": "monitor-github",
+      "response_time": 134,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:27.844Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782719967773-p6dk",
+      "monitor_id": "monitor-google",
+      "response_time": 63,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T07:59:27.773Z"
+    },
+    {
+      "id": "log-1782719967726-xd9d",
+      "monitor_id": "monitor-broken",
+      "response_time": 16,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:27.726Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
+    {
+      "id": "log-1782719957614-t0bd",
+      "monitor_id": "monitor-github",
+      "response_time": 121,
+      "status_code": 403,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:17.614Z",
+      "error_message": "Server returned unhealthy status: 403 rate limit exceeded"
+    },
+    {
+      "id": "log-1782719957557-nn5h",
+      "monitor_id": "monitor-google",
+      "response_time": 64,
+      "status_code": 200,
+      "status": "up",
+      "timestamp": "2026-06-29T07:59:17.557Z"
+    },
+    {
+      "id": "log-1782719957500-miqo",
+      "monitor_id": "monitor-broken",
+      "response_time": 7,
+      "status_code": 0,
+      "status": "down",
+      "timestamp": "2026-06-29T07:59:17.500Z",
+      "error_message": "DNS resolution failed for this-domain-does-not-exist-uptimepro-test.com"
+    },
     {
       "id": "log-1782719947430-gt37",
       "monitor_id": "monitor-github",
@@ -28392,6 +33241,48 @@
   ],
   "systemLogs": [
     {
+      "id": "syslog-1782721845727-o3t7",
+      "level": "info",
+      "message": "Security Audit: User authenticated successfully via TLS: subscriber@uptimepro.io",
+      "timestamp": "2026-06-29T08:30:45.727Z"
+    },
+    {
+      "id": "syslog-1782721844412-4kn0",
+      "level": "info",
+      "message": "Recovery: GitHub API is UP again. Alerts reset.",
+      "timestamp": "2026-06-29T08:30:44.412Z"
+    },
+    {
+      "id": "syslog-1782721844401-czuk",
+      "level": "info",
+      "message": "Email notification dispatched to subscriber@uptimepro.io: \"RECOVERY: GitHub API is UP\".",
+      "timestamp": "2026-06-29T08:30:44.401Z"
+    },
+    {
+      "id": "syslog-1782721823768-9vz0",
+      "level": "info",
+      "message": "Starting UptimePro Monitoring Engine worker (interval: 5s)...",
+      "timestamp": "2026-06-29T08:30:23.768Z"
+    },
+    {
+      "id": "syslog-1782721434808-xbza",
+      "level": "info",
+      "message": "Security Audit: User authenticated successfully via TLS: amberfilia@wshu.net",
+      "timestamp": "2026-06-29T08:23:54.808Z"
+    },
+    {
+      "id": "syslog-1782721428618-8geu",
+      "level": "info",
+      "message": "Security Audit: New node registered successfully: amberfilia@wshu.net (user-34bc4929f81c)",
+      "timestamp": "2026-06-29T08:23:48.618Z"
+    },
+    {
+      "id": "syslog-1782719978528-7s50",
+      "level": "info",
+      "message": "Starting UptimePro Monitoring Engine worker (interval: 5s)...",
+      "timestamp": "2026-06-29T07:59:38.528Z"
+    },
+    {
       "id": "syslog-1782719950215-at0t",
       "level": "info",
       "message": "Security Audit: User authenticated successfully via TLS: subscriber@uptimepro.io",
@@ -28835,6 +33726,14 @@
   },
   "backupSnapshots": [],
   "activities": [
+    {
+      "id": "act-1782721434815-1yr26x6",
+      "user_id": "user-34bc4929f81c",
+      "type": "login",
+      "title": "Successful Login",
+      "description": "Logged in securely using standard authentication.",
+      "timestamp": "2026-06-29T08:23:54.815Z"
+    },
     {
       "id": "act-1782719950221-4sd7odb",
       "user_id": "user-1",

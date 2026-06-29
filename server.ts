@@ -105,7 +105,7 @@ async function startServer() {
     (req as any).user = user;
 
     // Admin endpoint protection
-    const isAdminUser = user.email.toLowerCase() === "admin@uptimepro.io" || user.id === "user-admin";
+    const isAdminUser = user.id === "user-admin";
     if (req.path.startsWith("/admin/") || (req.path.startsWith("/config") && req.method !== "GET")) {
        if (!isAdminUser) {
            return res.status(403).json({ error: "Forbidden. Admin access required." });
@@ -224,31 +224,69 @@ async function startServer() {
 
       const db = readDb();
       const lowerEmail = email.toLowerCase().trim();
-      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+      
+      const adminEnvEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.toLowerCase().trim() : "admin@uptimepro.io";
+      const isAdminLogin = lowerEmail === adminEnvEmail || lowerEmail === "admin@uptimepro.io";
 
-      if (!user) {
-        res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
-        return;
-      }
+      let user: any = null;
 
-      // If user has a registered password, enforce check
-      if (user.password_hash && user.password_salt) {
-        const computed = hashPassword(password, user.password_salt);
-        if (computed !== user.password_hash) {
+      if (isAdminLogin) {
+        if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+          res.status(401).json({ error: "Admin login disabled. Required environment variables (ADMIN_EMAIL, ADMIN_PASSWORD) are not set." });
+          return;
+        }
+
+        if (lowerEmail !== process.env.ADMIN_EMAIL.toLowerCase().trim() || password !== process.env.ADMIN_PASSWORD) {
+          res.status(401).json({ error: "Access Denied. Invalid admin credentials." });
+          return;
+        }
+
+        // Retrieve or initialize the admin user record
+        user = db.users.find((u: any) => u.id === "user-admin" || u.email.toLowerCase() === lowerEmail);
+        if (!user) {
+          user = {
+            id: "user-admin",
+            name: "Super Admin",
+            email: process.env.ADMIN_EMAIL,
+            balance: 1000.0,
+            wallet_address: "0x1234567890abcdef1234567890abcdef12345678",
+            plan_id: "enterprise",
+            createdAt: new Date().toISOString(),
+            telegram_chat_id: "",
+          };
+          db.users.push(user);
+          writeDb(db);
+        } else if (user.email !== process.env.ADMIN_EMAIL) {
+          user.email = process.env.ADMIN_EMAIL;
+          writeDb(db);
+        }
+      } else {
+        // Standard subscriber authentication flow
+        user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+
+        if (!user) {
           res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
           return;
         }
-      } else {
-        // Fallback for pre-loaded mock user with no password yet
-        // If password is submitted, we auto-save it on first login to make it fully secure
-        const salt = generateSalt();
-        user.password_hash = hashPassword(password, salt);
-        user.password_salt = salt;
-        writeDb(db);
+
+        // Enforce cryptographic password match
+        if (user.password_hash && user.password_salt) {
+          const computed = hashPassword(password, user.password_salt);
+          if (computed !== user.password_hash) {
+            res.status(401).json({ error: "Access Denied. Invalid security handshake credentials." });
+            return;
+          }
+        } else {
+          // Fallback for pre-loaded mock user with no password yet
+          const salt = generateSalt();
+          user.password_hash = hashPassword(password, salt);
+          user.password_salt = salt;
+          writeDb(db);
+        }
       }
 
       // Check if user is Super Admin and has global 2FA enabled/enforced
-      const isAdminUser = lowerEmail === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       const config = db.config;
 
       if (isAdminUser && (config.twofa_enabled || config.twofa_enforced)) {
@@ -338,7 +376,10 @@ async function startServer() {
         return;
       }
 
-      const isAdminUser = lowerEmail === "admin@uptimepro.io" || recordKey.startsWith("admin");
+      const db = readDb();
+      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+
+      const isAdminUser = user?.id === "user-admin";
       let isCodeValid = record.otp === String(otp).trim();
       
       if (!isCodeValid && isAdminUser && record.deliveryMethod === "authenticator") {
@@ -350,9 +391,6 @@ async function startServer() {
         res.status(401).json({ error: "Cryptographic validation failed. Invalid 2FA OTP code." });
         return;
       }
-
-      const db = readDb();
-      const user = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
 
       if (!user) {
         res.status(404).json({ error: "User profile not found." });
@@ -799,7 +837,7 @@ async function startServer() {
       }
 
       const monitor = db.monitors[idx];
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       if (monitor.user_id !== user.id && !isAdminUser) {
         res.status(403).json({ error: "Forbidden. Cannot modify other users' monitors." });
         return;
@@ -863,7 +901,7 @@ async function startServer() {
         return;
       }
 
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       if (monitor.user_id !== user.id && !isAdminUser) {
         res.status(403).json({ error: "Forbidden. Cannot delete other users' monitors." });
         return;
@@ -899,7 +937,7 @@ async function startServer() {
         return;
       }
 
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       if (monitor.user_id !== user.id && !isAdminUser) {
         res.status(403).json({ error: "Forbidden. Cannot access other users' monitors." });
         return;
@@ -934,7 +972,7 @@ async function startServer() {
         return;
       }
 
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       if (monitor.user_id !== user.id && !isAdminUser) {
         res.status(403).json({ error: "Forbidden. Cannot trigger checks for other users' monitors." });
         return;
@@ -1089,7 +1127,7 @@ async function startServer() {
         res.status(401).json({ error: "Session expired or user not found." });
         return;
       }
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       if (isAdminUser) {
         res.json(db.payments);
       } else {
@@ -1153,7 +1191,7 @@ async function startServer() {
         res.status(401).json({ error: "Session expired or user not found." });
         return;
       }
-      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const isAdminUser = user.id === "user-admin";
       const userMonitors = db.monitors.filter(m => m.user_id === user.id);
 
       const alertLogs = db.systemLogs.filter((log) => {

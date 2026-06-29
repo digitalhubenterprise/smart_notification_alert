@@ -183,7 +183,7 @@ export default function App() {
         plansRes.json()
       ]);
 
-      const isLocalAdmin = userData?.email?.toLowerCase().includes("admin") || userData?.id === "user-admin";
+      const isLocalAdmin = userData?.id === "user-admin";
       
       let allUsersData = [];
       if (isLocalAdmin) {
@@ -249,7 +249,7 @@ export default function App() {
         return;
       }
 
-      const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
+      const isLocalAdmin = data.user?.id === "user-admin";
       const detectedRole = isLocalAdmin ? "admin" : "subscriber";
       setActiveRole(detectedRole);
       if (detectedRole === "admin") {
@@ -284,7 +284,7 @@ export default function App() {
         throw new Error(data.error || "Invalid 2FA code.");
       }
 
-      const isLocalAdmin = loginEmail.toLowerCase().includes("admin");
+      const isLocalAdmin = data.user?.id === "user-admin";
       const detectedRole = isLocalAdmin ? "admin" : "subscriber";
       setActiveRole(detectedRole);
       if (detectedRole === "admin") {
