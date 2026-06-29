@@ -358,9 +358,10 @@ export function getPgPool(): pg.Pool | null {
   const url = process.env.DATABASE_URL || (dbCache?.config as any)?.database_url || (readDb().config as any)?.database_url;
   if (!pgPool && url) {
     try {
+      const isSslDisabled = url.includes("sslmode=disable");
       pgPool = new pg.Pool({
         connectionString: url,
-        ssl: url.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+        ssl: isSslDisabled ? false : (url.includes("sslmode=") ? undefined : { rejectUnauthorized: false }),
         max: 20, // Support more connections for 500+ users
         idleTimeoutMillis: 30000
       });
@@ -404,15 +405,37 @@ export async function reconnectDb(newUrl: string): Promise<{ success: boolean; e
     pgPool = null;
   }
 
+  const isSslDisabled = newUrl.includes("sslmode=disable");
+  let useSsl: any = isSslDisabled ? false : (newUrl.includes("sslmode=") ? undefined : { rejectUnauthorized: false });
+
   try {
-    const pool = new pg.Pool({
+    let pool = new pg.Pool({
       connectionString: newUrl,
-      ssl: newUrl.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+      ssl: useSsl,
       max: 20,
       idleTimeoutMillis: 30000
     });
     
-    await pool.query("SELECT NOW()");
+    try {
+      await pool.query("SELECT NOW()");
+    } catch (err: any) {
+      const isSslError = err.message.toLowerCase().includes("ssl") || 
+                         err.message.toLowerCase().includes("does not support ssl") ||
+                         err.message.toLowerCase().includes("negotiate ssl");
+      if (isSslError && useSsl !== false) {
+        console.log("[PostgreSQL] SSL connection failed. Retrying without SSL...");
+        pool = new pg.Pool({
+          connectionString: newUrl,
+          ssl: false,
+          max: 20,
+          idleTimeoutMillis: 30000
+        });
+        await pool.query("SELECT NOW()");
+        useSsl = false;
+      } else {
+        throw err;
+      }
+    }
     
     // Create schema if not exists
     await pool.query(`
@@ -455,17 +478,50 @@ export async function reconnectDb(newUrl: string): Promise<{ success: boolean; e
 }
 
 export async function initializeDb(): Promise<DatabaseSchema> {
-  const pool = getPgPool();
+  let pool = getPgPool();
   if (pool) {
     try {
       console.log("[PostgreSQL] Checking schema tables...");
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS uptime_state (
-          key VARCHAR(50) PRIMARY KEY,
-          value TEXT NOT NULL,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS uptime_state (
+            key VARCHAR(50) PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+      } catch (err: any) {
+        const isSslError = err.message.toLowerCase().includes("ssl") || 
+                           err.message.toLowerCase().includes("does not support ssl") ||
+                           err.message.toLowerCase().includes("negotiate ssl");
+        if (isSslError) {
+          console.log("[PostgreSQL] SSL connection failed during initialize. Retrying without SSL...");
+          const url = process.env.DATABASE_URL || (dbCache?.config as any)?.database_url || (readDb().config as any)?.database_url;
+          if (url) {
+            if (pgPool) {
+              await pgPool.end().catch(() => {});
+            }
+            pgPool = new pg.Pool({
+              connectionString: url,
+              ssl: false,
+              max: 20,
+              idleTimeoutMillis: 30000
+            });
+            pool = pgPool;
+            await pool.query(`
+              CREATE TABLE IF NOT EXISTS uptime_state (
+                key VARCHAR(50) PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              )
+            `);
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
       
       const res = await pool.query("SELECT value FROM uptime_state WHERE key = 'state'");
       isPgConnected = true;
