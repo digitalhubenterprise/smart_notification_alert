@@ -215,10 +215,16 @@ export default function App() {
     }
   };
 
-  // On first mount, boot data using current email
+  // On first mount, boot data using current email only if user is logged in
   useEffect(() => {
-    const activeEmail = localStorage.getItem("uptimepro_loginEmail") || loginEmail;
-    loadPlatformData(false, activeEmail);
+    const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
+    const token = localStorage.getItem("uptimepro_authToken");
+    if (isLoggedInVal && token) {
+      const activeEmail = localStorage.getItem("uptimepro_loginEmail") || loginEmail;
+      loadPlatformData(false, activeEmail);
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   // Cryptographic Authentication Handlers
