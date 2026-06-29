@@ -37,7 +37,17 @@ async function startServer() {
 
   // Security Middleware
   app.use("/api", (req, res, next) => {
-    if (req.path.startsWith("/auth/")) return next();
+    const publicAuthPaths = [
+      "/auth/login",
+      "/auth/login-2fa",
+      "/auth/register",
+      "/auth/reset-request",
+      "/auth/reset-verify",
+      "/auth/logout"
+    ];
+    if (publicAuthPaths.includes(req.path)) {
+      return next();
+    }
     
     const cookies = req.headers.cookie;
     let token = null;
@@ -87,6 +97,9 @@ async function startServer() {
 
   // Helper to dynamically get the active session user
   const getActiveUser = (req: express.Request, db: any) => {
+    if ((req as any).user) {
+      return (req as any).user;
+    }
     const emailHeader = req.headers["x-user-email"] || req.query.email;
     if (emailHeader) {
       const matched = db.users.find((u: any) => u.email.toLowerCase() === String(emailHeader).toLowerCase());
@@ -261,7 +274,7 @@ async function startServer() {
 
       addSystemLog("info", `Security Audit: User authenticated successfully via TLS: ${user.email}`);
       issueSession(user, res, db);
-      res.json({ success: true, user });
+      res.json({ success: true, user: getSafeUser(user) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -317,7 +330,7 @@ async function startServer() {
 
       addSystemLog("info", `Security Audit: User completed 2FA challenge and logged in successfully: ${user.email}`);
       issueSession(user, res, db);
-      res.json({ success: true, user });
+      res.json({ success: true, user: getSafeUser(user) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -411,7 +424,7 @@ async function startServer() {
       tempOtps.delete(recordKey);
 
       addSystemLog("info", `Security Audit: User successfully enabled 2FA via ${delivery_method.toUpperCase()}: ${user.email}`);
-      res.json({ success: true, user });
+      res.json({ success: true, user: getSafeUser(user) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -511,6 +524,14 @@ async function startServer() {
     }
   });
 
+  function getSafeUser(user: any) {
+    const safeUser = { ...user };
+    delete safeUser.password_hash;
+    delete safeUser.password_salt;
+    delete safeUser.apiToken;
+    return safeUser;
+  }
+
   // Get active subscriber user
   app.get("/api/user", (req, res) => {
     try {
@@ -520,7 +541,7 @@ async function startServer() {
         res.status(401).json({ error: "Session expired or user not found. Please log in again." });
         return;
       }
-      res.json(user);
+      res.json(getSafeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -543,7 +564,7 @@ async function startServer() {
       if (two_factor_email !== undefined) user.two_factor_email = !!two_factor_email;
       if (two_factor_telegram !== undefined) user.two_factor_telegram = !!two_factor_telegram;
       writeDb(db);
-      res.json(user);
+      res.json(getSafeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -584,7 +605,7 @@ async function startServer() {
       writeDb(db);
 
       addSystemLog("info", `User upgraded subscription plan to ${selectedPlan.name.toUpperCase()} (${plan_id}). Charged ${cost} USDT.`);
-      res.json({ success: true, user });
+      res.json({ success: true, user: getSafeUser(user) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -610,7 +631,7 @@ async function startServer() {
       writeDb(db);
 
       addSystemLog("info", `Sandbox Mode: Admin credited user wallet with ${creditAmount} USDT.`);
-      res.json({ success: true, user });
+      res.json({ success: true, user: getSafeUser(user) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -730,6 +751,12 @@ async function startServer() {
       const { name, url, monitor_type, interval_sec } = req.body;
       const db = readDb();
       
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+
       const idx = db.monitors.findIndex((m) => m.id === id);
       if (idx === -1) {
         res.status(404).json({ error: "Monitor not found." });
@@ -737,9 +764,9 @@ async function startServer() {
       }
 
       const monitor = db.monitors[idx];
-      const user = getActiveUser(req, db);
-      if (!user) {
-        res.status(401).json({ error: "Session expired or user not found." });
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      if (monitor.user_id !== user.id && !isAdminUser) {
+        res.status(403).json({ error: "Forbidden. Cannot modify other users' monitors." });
         return;
       }
 
@@ -789,9 +816,21 @@ async function startServer() {
       const { id } = req.params;
       const db = readDb();
       
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+
       const monitor = db.monitors.find((m) => m.id === id);
       if (!monitor) {
         res.status(404).json({ error: "Monitor not found." });
+        return;
+      }
+
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      if (monitor.user_id !== user.id && !isAdminUser) {
+        res.status(403).json({ error: "Forbidden. Cannot delete other users' monitors." });
         return;
       }
 
@@ -812,6 +851,25 @@ async function startServer() {
     try {
       const { id } = req.params;
       const db = readDb();
+
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+
+      const monitor = db.monitors.find((m) => m.id === id);
+      if (!monitor) {
+        res.status(404).json({ error: "Monitor not found." });
+        return;
+      }
+
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      if (monitor.user_id !== user.id && !isAdminUser) {
+        res.status(403).json({ error: "Forbidden. Cannot access other users' monitors." });
+        return;
+      }
+
       // Return the last 30 logs for this monitor, sorted oldest to newest for graphing
       const logs = db.logs
         .filter((l) => l.monitor_id === id)
@@ -832,6 +890,18 @@ async function startServer() {
 
       if (!monitor) {
         res.status(404).json({ error: "Monitor not found." });
+        return;
+      }
+
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      if (monitor.user_id !== user.id && !isAdminUser) {
+        res.status(403).json({ error: "Forbidden. Cannot trigger checks for other users' monitors." });
         return;
       }
 
@@ -979,7 +1049,18 @@ async function startServer() {
   app.get("/api/payment/history", (req, res) => {
     try {
       const db = readDb();
-      res.json(db.payments);
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      if (isAdminUser) {
+        res.json(db.payments);
+      } else {
+        const userPayments = db.payments.filter((p) => p.user_id === user.id);
+        res.json(userPayments);
+      }
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1016,13 +1097,26 @@ async function startServer() {
   app.get("/api/alerts", (req, res) => {
     try {
       const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user) {
+        res.status(401).json({ error: "Session expired or user not found." });
+        return;
+      }
+      const isAdminUser = user.email === "admin@uptimepro.io" || user.id === "user-admin";
+      const userMonitors = db.monitors.filter(m => m.user_id === user.id);
+
       const alertLogs = db.systemLogs.filter((log) => {
         const msg = log.message.toLowerCase();
-        return (
+        const isAlertLog = (
           msg.includes("alert triggered") ||
           msg.includes("recovery:") ||
           msg.includes("email notification triggered")
         );
+        if (!isAlertLog) return false;
+        if (isAdminUser) return true;
+        // Basic filter: only show if the log contains the name or url of a user's monitor
+        // This prevents leaking other users' monitor statuses.
+        return userMonitors.some(m => msg.includes(m.name.toLowerCase()) || msg.includes(m.url.toLowerCase()));
       });
       res.json(alertLogs);
     } catch (err: any) {
@@ -1226,7 +1320,7 @@ async function startServer() {
   app.get("/api/admin/users", (req, res) => {
     try {
       const db = readDb();
-      res.json(db.users);
+      res.json(db.users.map(getSafeUser));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1310,7 +1404,7 @@ async function startServer() {
 
       writeDb(db);
       addSystemLog("info", `Admin modified user profile for ${user.name} (${user.email})`);
-      res.json(user);
+      res.json(getSafeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
