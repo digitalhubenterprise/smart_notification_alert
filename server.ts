@@ -38,6 +38,28 @@ const tempRegistrations = new Map<string, {
   data: any;
 }>();
 
+// Background secure memory cleanup routine to prevent memory leaks from expired tokens & registrations
+setInterval(() => {
+  const now = Date.now();
+  let prunedOtps = 0;
+  let prunedRegs = 0;
+  for (const [key, record] of tempOtps.entries()) {
+    if (now > record.expires) {
+      tempOtps.delete(key);
+      prunedOtps++;
+    }
+  }
+  for (const [key, record] of tempRegistrations.entries()) {
+    if (now > record.expires) {
+      tempRegistrations.delete(key);
+      prunedRegs++;
+    }
+  }
+  if (prunedOtps > 0 || prunedRegs > 0) {
+    console.log(`[MEMORY CLEANUP] Security Audit: Automatically pruned ${prunedOtps} expired OTPs and ${prunedRegs} expired registrations.`);
+  }
+}, 60 * 1000);
+
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1); // Trust first proxy (Cloud Run / Nginx)
@@ -1549,7 +1571,7 @@ async function startServer() {
   });
 
   // Admin 2FA Channel Dispatch Tester
-  app.post("/api/admin/twofa/send-test", (req, res) => {
+  app.post("/api/admin/twofa/send-test", async (req, res) => {
     try {
       const { channel } = req.body;
       if (!channel || (channel !== "email" && channel !== "telegram")) {
@@ -1577,10 +1599,38 @@ async function startServer() {
         systemLogsList.push(`[${timestamp}] SENDER IDENTIFIER: ${config.smtp_from || "alerts@uptimepro.io"}`);
         systemLogsList.push(`[${timestamp}] RECIPIENT IDENTIFIER: ${destEmail}`);
         systemLogsList.push(`[${timestamp}] OUTBOUND SECURITY TOKEN ASSIGNED: [${otp}]`);
-        systemLogsList.push(`[${timestamp}] TRANSMISSION PROTOCOL: TLS/SSL HANDSHAKE SUCCESSFUL`);
-        systemLogsList.push(`[${timestamp}] STATUS: DELIVERED`);
+        systemLogsList.push(`[${timestamp}] INITIATING REAL SMTP TRANSPORT DISPATCH...`);
+
+        const emailText = `Hello,\n\nThis is a secure 2FA channel test from your UptimePro Admin Console.\n\nTest Verification Token: ${otp}\n\nYour SMTP settings are working perfectly!\n\nThank you,\nUptimePro Security System`;
+        const emailHtml = `
+          <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #4f46e5; margin-bottom: 16px;">UptimePro SMTP 2FA Test Successful!</h2>
+            <p style="font-size: 14px; line-height: 1.5;">This is a secure 2FA test message from your Admin Panel. If you received this email, your SMTP server settings are fully correct and functional.</p>
+            <div style="background-color: #f1f5f9; color: #1e1b4b; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #64748b; line-height: 1.5;">Thank you for securing UptimePro decentralized monitoring infrastructure.</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+          </div>
+        `;
+
+        const sentReal = await sendEmail({
+          to: destEmail,
+          subject: "UptimePro Admin 2FA Channel Test Connection",
+          text: emailText,
+          html: emailHtml
+        });
+
+        if (sentReal) {
+          systemLogsList.push(`[${timestamp}] TRANSMISSION PROTOCOL: SMTP DISPATCH HANDSHAKE COMPLETED`);
+          systemLogsList.push(`[${timestamp}] STATUS: DELIVERED`);
+        } else {
+          systemLogsList.push(`[${timestamp}] ❌ TRANSMISSION FAILURE: SMTP connection failed. Check your credential/port setup in Settings.`);
+          systemLogsList.push(`[${timestamp}] STATUS: FALLBACK TO SIMULATOR`);
+        }
         
-        addSystemLog("warn", `Security Audit: Super Admin simulated secure 2FA email dispatch to ${destEmail} with token [${otp}]`);
+        addSystemLog("warn", `Security Audit: Super Admin 2FA test email dispatch to ${destEmail} with token [${otp}]`);
       } else {
         const chatId = config.telegram_chat_id || "Unconfigured Fallback ID";
         const botToken = config.telegram_bot_token ? "bot" + config.telegram_bot_token.slice(0, 8) + "..." : "Unconfigured Bot Token";
