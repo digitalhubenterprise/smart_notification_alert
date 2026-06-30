@@ -12,6 +12,8 @@ export interface User {
   telegram_chat_id?: string;
   two_factor_email?: boolean;
   two_factor_telegram?: boolean;
+  custom_max_monitors?: number;
+  custom_min_interval_sec?: number;
 }
 
 export interface Monitor {
@@ -65,6 +67,8 @@ export interface AlertConfig {
   twofa_telegram_enabled?: boolean;
   twofa_authenticator_enabled?: boolean;
   twofa_preferred_method?: string;
+  global_notice?: string;
+  global_notice_enabled?: boolean;
 }
 
 export interface Payment {

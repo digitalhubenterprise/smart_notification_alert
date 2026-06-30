@@ -102,7 +102,7 @@ export default function SubscriberDashboard({
     return fetch(finalUrl, { ...options, headers });
   };
 
-  const currentPlan = plans.find((p) => p.id === user.plan_id) || {
+  const basePlan = plans.find((p) => p.id === user.plan_id) || {
     id: user.plan_id,
     name: user.plan_id === "free" ? "Starter" : user.plan_id === "pro" ? "Developer" : "SaaS / Enterprise",
     price: user.plan_id === "free" ? 0 : user.plan_id === "pro" ? 10 : 50,
@@ -110,6 +110,12 @@ export default function SubscriberDashboard({
     min_interval_sec: user.plan_id === "free" ? 30 : user.plan_id === "pro" ? 10 : 5,
     is_active: true,
     features: []
+  };
+
+  const currentPlan = {
+    ...basePlan,
+    max_monitors: user.custom_max_monitors !== undefined && user.custom_max_monitors !== null ? Number(user.custom_max_monitors) : basePlan.max_monitors,
+    min_interval_sec: user.custom_min_interval_sec !== undefined && user.custom_min_interval_sec !== null ? Number(user.custom_min_interval_sec) : basePlan.min_interval_sec,
   };
 
   // History & Alerts States

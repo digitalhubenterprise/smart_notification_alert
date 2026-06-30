@@ -172,7 +172,15 @@ export default function App() {
       }
 
       if (!userRes.ok || !monitorsRes.ok || !paymentsRes.ok || !configRes.ok || !plansRes.ok) {
-        throw new Error("Failed to load server data. Server might be initializing...");
+        const failedRes = [
+          { name: "User profile", res: userRes },
+          { name: "Monitors list", res: monitorsRes },
+          { name: "Payment history", res: paymentsRes },
+          { name: "System configuration", res: configRes },
+          { name: "Service plans", res: plansRes }
+        ].find(item => !item.res.ok);
+        const statusText = failedRes ? `(${failedRes.name} returned status ${failedRes.res.status})` : "";
+        throw new Error(`Failed to load server data ${statusText}. Server might be initializing...`);
       }
 
       const [userData, monitorsData, paymentsData, configData, plansData] = await Promise.all([
@@ -212,6 +220,19 @@ export default function App() {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleStopImpersonation = () => {
+    const adminEmail = localStorage.getItem("uptimepro_adminEmail");
+    const adminToken = localStorage.getItem("uptimepro_adminToken");
+    if (adminEmail && adminToken) {
+      localStorage.setItem("uptimepro_loginEmail", adminEmail);
+      localStorage.setItem("uptimepro_authToken", adminToken);
+      localStorage.removeItem("uptimepro_adminEmail");
+      localStorage.removeItem("uptimepro_adminToken");
+      localStorage.setItem("uptimepro_activeRole", "admin");
+      window.location.reload();
     }
   };
 
@@ -324,12 +345,14 @@ export default function App() {
       if (detectedRole === "admin") {
         setAdminTab("dashboard");
       }
+      localStorage.setItem("uptimepro_loginEmail", data.user.email);
+      setLoginEmail(data.user.email);
       localStorage.setItem("uptimepro_authToken", data.token);
       setIsLoggedIn(true);
       
       // Load platform metrics synchronously for the newly logged-in account
       setTimeout(() => {
-        loadPlatformData(true);
+        loadPlatformData(true, data.user.email);
       }, 50);
     } catch (err: any) {
       setAuthError(err.message || "Cryptographic authentication failed. Verify credentials.");
@@ -359,6 +382,8 @@ export default function App() {
       if (detectedRole === "admin") {
         setAdminTab("dashboard");
       }
+      localStorage.setItem("uptimepro_loginEmail", data.user.email);
+      setLoginEmail(data.user.email);
       localStorage.setItem("uptimepro_authToken", data.token);
       setIsLoggedIn(true);
       setRequire2fa(false);
@@ -368,7 +393,7 @@ export default function App() {
       
       // Load platform metrics synchronously for the newly logged-in account
       setTimeout(() => {
-        loadPlatformData(true);
+        loadPlatformData(true, data.user.email);
       }, 50);
     } catch (err: any) {
       setAuthError(err.message || "Cryptographic 2FA verification failed. Please try again.");
@@ -1330,6 +1355,32 @@ export default function App() {
       {/* 3. MAIN WORKSPACE AREA */}
       <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         
+        {/* Impersonation Alert Banner */}
+        {localStorage.getItem("uptimepro_adminEmail") && (
+          <div className="bg-emerald-600 text-white px-4 py-2.5 flex items-center justify-between text-xs font-bold gap-3 z-40 relative shadow-sm border-b border-emerald-700">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 shrink-0 animate-pulse text-emerald-100" />
+              <span>
+                🔒 <strong>Impersonation Session Active:</strong> You are currently logged in as subscriber <span className="underline font-mono text-emerald-100">{user?.name} ({user?.email})</span>.
+              </span>
+            </div>
+            <button
+              onClick={handleStopImpersonation}
+              className="bg-white hover:bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all shrink-0 shadow-xs uppercase tracking-wider"
+            >
+              Exit Impersonation
+            </button>
+          </div>
+        )}
+
+        {/* Global Announcement Notice Board */}
+        {config?.global_notice_enabled && config?.global_notice && (
+          <div className="bg-indigo-600 text-white px-4 py-2 flex items-center justify-center text-xs font-semibold gap-2.5 z-39 relative shadow-xs border-b border-indigo-700">
+            <span className="bg-white/20 px-2 py-0.5 rounded-md text-[9px] uppercase tracking-wider font-extrabold shrink-0">Announcement</span>
+            <span className="truncate">{config.global_notice}</span>
+          </div>
+        )}
+
         {/* Top Header Bar */}
         <header className="sticky top-0 bg-white border-b border-slate-100/80 z-30 backdrop-blur-md">
           <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

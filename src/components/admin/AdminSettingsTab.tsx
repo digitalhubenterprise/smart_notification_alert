@@ -60,6 +60,10 @@ export default function AdminSettingsTab({
   const [sitemapEnabled, setSitemapEnabled] = useState(true);
   const [siteBrandEmail, setSiteBrandEmail] = useState("support@uptimepro.io");
 
+  // Global Notice Board
+  const [globalNotice, setGlobalNotice] = useState("");
+  const [globalNoticeEnabled, setGlobalNoticeEnabled] = useState(false);
+
   // Multi-Channel 2FA Attributes
   const [twofaEnabled, setTwofaEnabled] = useState(false);
   const [twofaSecret, setTwofaSecret] = useState("JBSWY3DPEHPK3PXP");
@@ -161,6 +165,8 @@ export default function AdminSettingsTab({
       setGoogleAnalyticsId(config.google_analytics_id || "G-XXXXXXXXXX");
       setSitemapEnabled(config.sitemap_enabled !== undefined ? config.sitemap_enabled : true);
       setSiteBrandEmail(config.site_brand_email || "support@uptimepro.io");
+      setGlobalNotice(config.global_notice || "");
+      setGlobalNoticeEnabled(config.global_notice_enabled || false);
 
       // 2FA settings
       setTwofaEnabled(config.twofa_enabled || false);
@@ -232,7 +238,9 @@ export default function AdminSettingsTab({
           twofa_telegram_enabled: twofaTelegramEnabled,
           twofa_authenticator_enabled: twofaAuthenticatorEnabled,
           twofa_preferred_method: twofaPreferredMethod,
-          log_retention_hours: logRetentionHours
+          log_retention_hours: logRetentionHours,
+          global_notice: globalNotice,
+          global_notice_enabled: globalNoticeEnabled
         })
       });
 
@@ -648,6 +656,48 @@ export default function AdminSettingsTab({
                     />
                     <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
+                </div>
+
+                {/* Global Announcement Board */}
+                <div className="border border-slate-100 rounded-xl p-3.5 bg-slate-50/50 space-y-3">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <Settings className="w-4 h-4 text-indigo-500" />
+                      <span>Global Notice Board Banner Announcement</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 block font-bold leading-relaxed">
+                      Deploy a persistent sitewide alert banner at the very top of subscriber workspaces for service downtime alerts, general announcements, or promotional news.
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-150">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-black text-slate-800 block">Sitewide Banner Status</span>
+                        <span className="text-[10px] text-slate-400 block font-bold">Toggle sitewide global notice banner visibility.</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={globalNoticeEnabled}
+                          onChange={(e) => setGlobalNoticeEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase">Banner Message Text</label>
+                      <input
+                        type="text"
+                        value={globalNotice}
+                        onChange={(e) => setGlobalNotice(e.target.value)}
+                        className="w-full border border-slate-200 bg-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500 font-bold text-slate-800"
+                        placeholder="e.g. Scheduled database maintenance starting UTC 23:00. Uptime tracking unaffected."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

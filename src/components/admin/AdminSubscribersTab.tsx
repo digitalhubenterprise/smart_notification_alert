@@ -54,8 +54,44 @@ export default function AdminSubscribersTab({
   const [editUser2faEmail, setEditUser2faEmail] = useState(false);
   const [editUser2faTelegram, setEditUser2faTelegram] = useState(false);
   const [editUserCreatedAt, setEditUserCreatedAt] = useState("");
+  const [editUserCustomMaxMonitors, setEditUserCustomMaxMonitors] = useState<string>("");
+  const [editUserCustomMinInterval, setEditUserCustomMinInterval] = useState<string>("");
 
   const [copiedId, setCopiedId] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState<string | null>(null);
+
+  const handleImpersonate = async (targetUser: User) => {
+    try {
+      setIsImpersonating(targetUser.id);
+      const res = await apiFetch(`/api/admin/impersonate/${targetUser.id}`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Save original admin details before changing
+        const currentEmail = localStorage.getItem("uptimepro_loginEmail");
+        const currentToken = localStorage.getItem("uptimepro_authToken");
+        if (currentEmail) localStorage.setItem("uptimepro_adminEmail", currentEmail);
+        if (currentToken) localStorage.setItem("uptimepro_adminToken", currentToken);
+
+        // Set user details
+        localStorage.setItem("uptimepro_loginEmail", data.user.email);
+        localStorage.setItem("uptimepro_authToken", data.token);
+        localStorage.setItem("uptimepro_isLoggedIn", "true");
+        localStorage.setItem("uptimepro_activeRole", "subscriber");
+
+        onSuccess(`🚀 Now impersonating: ${data.user.name}`);
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        onError(err.error || "Failed to impersonate subscriber.");
+      }
+    } catch (err: any) {
+      onError(err.message || "Failed to initiate session switch.");
+    } finally {
+      setIsImpersonating(null);
+    }
+  };
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting2FA, setIsResetting2FA] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
@@ -96,6 +132,8 @@ export default function AdminSubscribersTab({
     setEditUser2faEmail(!!user.two_factor_email);
     setEditUser2faTelegram(!!user.two_factor_telegram);
     setEditUserCreatedAt(user.createdAt || new Date().toISOString());
+    setEditUserCustomMaxMonitors(user.custom_max_monitors !== undefined && user.custom_max_monitors !== null ? String(user.custom_max_monitors) : "");
+    setEditUserCustomMinInterval(user.custom_min_interval_sec !== undefined && user.custom_min_interval_sec !== null ? String(user.custom_min_interval_sec) : "");
     setCopiedId(false);
   };
 
@@ -171,7 +209,9 @@ export default function AdminSubscribersTab({
           telegram_chat_id: editUserTgChatId,
           two_factor_email: editUser2faEmail,
           two_factor_telegram: editUser2faTelegram,
-          createdAt: editUserCreatedAt
+          createdAt: editUserCreatedAt,
+          custom_max_monitors: editUserCustomMaxMonitors === "" ? null : Number(editUserCustomMaxMonitors),
+          custom_min_interval_sec: editUserCustomMinInterval === "" ? null : Number(editUserCustomMinInterval)
         })
       });
 
@@ -287,6 +327,16 @@ export default function AdminSubscribersTab({
                       </span>
                     </div>
 
+                    {/* Impersonate Action */}
+                    <button
+                      disabled={isImpersonating !== null}
+                      onClick={() => handleImpersonate(u)}
+                      className="col-span-2 md:col-span-1 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-55 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 border border-emerald-200/50"
+                    >
+                      {isImpersonating === u.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Unlock className="w-3.5 h-3.5" />}
+                      <span>Impersonate</span>
+                    </button>
+
                     {/* Edit Trigger Action */}
                     <button
                       onClick={() => startEditUser(u)}
@@ -399,6 +449,26 @@ export default function AdminSubscribersTab({
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>{new Date(editingUser.createdAt).toUTCString()}</span>
                   </div>
+                </div>
+
+                {/* Live Impersonate Command Widget */}
+                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Unlock className="w-4 h-4 text-emerald-600" />
+                    <span className="text-[10px] font-black uppercase text-emerald-800">Admin Impersonate Gate</span>
+                  </div>
+                  <p className="text-[10px] text-emerald-700 leading-normal font-medium">
+                    Instantly log in as this subscriber to view their dashboard, resolve check errors, configure monitors, or verify account states without requesting credentials.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={isImpersonating !== null}
+                    onClick={() => handleImpersonate(editingUser)}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    {isImpersonating === editingUser.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Unlock className="w-3.5 h-3.5" />}
+                    <span>Login as {editingUser.name}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -530,6 +600,33 @@ export default function AdminSubscribersTab({
                       onChange={(e) => setEditUserCreatedAt(e.target.value)}
                       placeholder="YYYY-MM-DDTHH:MM:SS.sssZ"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-mono outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  {/* Custom Quota Limit Overrides */}
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-rose-500 font-bold uppercase tracking-wider block">
+                      Custom Max Monitors Limit
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Leave blank for plan default"
+                      value={editUserCustomMaxMonitors}
+                      onChange={(e) => setEditUserCustomMaxMonitors(e.target.value)}
+                      className="w-full bg-slate-50 border border-rose-100 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-black outline-none focus:border-rose-500 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-rose-500 font-bold uppercase tracking-wider block">
+                      Custom Min Check Interval (Sec)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Leave blank for plan default"
+                      value={editUserCustomMinInterval}
+                      onChange={(e) => setEditUserCustomMinInterval(e.target.value)}
+                      className="w-full bg-slate-50 border border-rose-100 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-black outline-none focus:border-rose-500 focus:bg-white transition-all"
                     />
                   </div>
 
