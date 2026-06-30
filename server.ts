@@ -171,10 +171,20 @@ async function startServer() {
       const lowerEmail = email.toLowerCase().trim();
 
       // Ensure email uniqueness
-      const existing = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
-      if (existing) {
-        res.status(400).json({ error: "A node has already registered with this email address." });
+      const existingEmail = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+      if (existingEmail) {
+        res.status(400).json({ error: "The email address is already registered. Please use a different email or recover your account if you forgot your credentials." });
         return;
+      }
+
+      // Ensure phone uniqueness
+      const trimmedPhone = phone ? phone.trim() : "";
+      if (trimmedPhone) {
+        const existingPhone = db.users.find((u: any) => u.phone && u.phone.trim() === trimmedPhone);
+        if (existingPhone) {
+          res.status(400).json({ error: "The phone number is already registered. Please use a different phone number or recover your account if you forgot your credentials." });
+          return;
+        }
       }
 
       const salt = generateSalt();
@@ -190,7 +200,7 @@ async function startServer() {
         phone: phone ? phone.trim() : "",
         password_hash: hash,
         password_salt: salt,
-        balance: 10.00, // Gift 10 USDT starting balance for pro simulation
+        balance: 0.00, // Initial balance set to 0.00 as requested
         wallet_address: randomWallet,
         plan_id: "free" as const,
         createdAt: new Date().toISOString(),

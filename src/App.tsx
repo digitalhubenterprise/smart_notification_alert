@@ -109,6 +109,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isProfileSyncing, setIsProfileSyncing] = useState(false);
 
   // Refs for API request optimization (prevents concurrent fetches & race conditions)
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -190,7 +191,18 @@ export default function App() {
         apiFetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, options)
       ]);
 
-      if (userRes.status === 401) {
+      if (userRes.status === 401 || userRes.status === 404) {
+        const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
+        if (isLoggedInVal) {
+          setIsProfileSyncing(true);
+          setError(null);
+          // Auto-retry fetching after 2 seconds to check if profile has propagated
+          setTimeout(() => {
+            loadPlatformData(true, customEmail);
+          }, 2000);
+          return;
+        }
+
         setIsLoggedIn(false);
         setActivePage("login");
         localStorage.removeItem("uptimepro_isLoggedIn");
@@ -211,6 +223,20 @@ export default function App() {
           { name: "System configuration", res: configRes },
           { name: "Service plans", res: plansRes }
         ].find(item => !item.res.ok);
+
+        // Handle edge case where User profile failed to load but the user is authenticated (Profile Syncing)
+        if (failedRes && failedRes.name === "User profile") {
+          const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
+          if (isLoggedInVal) {
+            setIsProfileSyncing(true);
+            setError(null);
+            setTimeout(() => {
+              loadPlatformData(true, customEmail);
+            }, 2000);
+            return;
+          }
+        }
+
         const statusText = failedRes ? `(${failedRes.name} returned status ${failedRes.res.status})` : "";
         throw new Error(`Failed to load server data ${statusText}. Server might be initializing...`);
       }
@@ -233,7 +259,8 @@ export default function App() {
         }
       }
 
-      setUser(userData);
+       setUser(userData);
+      setIsProfileSyncing(false);
       setActiveRole(isLocalAdmin ? "admin" : "subscriber");
       setAllUsers(allUsersData);
       setMonitors(monitorsData);
@@ -481,7 +508,11 @@ export default function App() {
       // Switch to login view
       setActivePage("login");
     } catch (err: any) {
-      setAuthError(err.message || "Failed to register secure node.");
+      const errMsg = err.message || "Failed to register secure node.";
+      setAuthError(errMsg);
+      if (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("exist")) {
+        setForgotEmail(registerEmail);
+      }
     } finally {
       setIsRegistering(false);
     }
@@ -605,7 +636,7 @@ export default function App() {
                 }`}
               >
                 <Globe className={`w-4 h-4 ${subscriberTab === "monitors" ? "text-indigo-500" : ""}`} />
-                <span>Monitors & Metrics</span>
+                <span>Monitors</span>
               </button>
 
               <button
@@ -650,7 +681,7 @@ export default function App() {
                 }`}
               >
                 <CreditCard className={`w-4 h-4 ${subscriberTab === "billing" ? "text-indigo-500" : ""}`} />
-                <span>Billing & Subscription</span>
+                <span>Subscription</span>
               </button>
 
               <button
@@ -835,6 +866,29 @@ export default function App() {
     );
   }
 
+  if (isLoggedIn && (isProfileSyncing || (!user && activeRole === "subscriber"))) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center select-none font-sans">
+        <div className="space-y-4 max-w-sm">
+          {/* Glowing pulse animation */}
+          <div className="relative flex items-center justify-center w-16 h-16 mx-auto bg-indigo-100 rounded-full text-indigo-600 animate-pulse">
+            <RefreshCw className="w-8 h-8 animate-spin" style={{ animationDuration: '2s' }} />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-20 animate-ping"></span>
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="text-lg font-black tracking-tight text-slate-800">Profile Syncing...</h1>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              We are finalizing your cryptographic secure profile. Your node telemetry will be active shortly.
+            </p>
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono bg-slate-100 px-3 py-1.5 rounded-lg inline-block">
+            Status: Propagating to blockchain registry...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     if (activePage === "landing") {
       return (
@@ -915,6 +969,21 @@ export default function App() {
                 Authentication Error:
               </p>
               <p className="text-[11px] leading-relaxed opacity-90">{authError}</p>
+              {(authError.toLowerCase().includes("already registered") || authError.toLowerCase().includes("exist") || authError.toLowerCase().includes("forgot") || authError.toLowerCase().includes("recover")) && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePage("forgot_password");
+                      setAuthError(null);
+                      setAuthSuccess(null);
+                    }}
+                    className="text-xs font-black text-indigo-400 hover:text-indigo-300 underline cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <span>Forgot your password or account? Recover access now &rarr;</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
