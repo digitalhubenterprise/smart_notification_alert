@@ -40,6 +40,9 @@ export async function sendEmail({ to, subject, text, html }: SendEmailParams): P
       tls: {
         rejectUnauthorized: false, // Prevents certificate verification issues
       },
+      connectionTimeout: 4000,   // 4 seconds maximum to establish a connection
+      greetingTimeout: 3000,     // 3 seconds maximum to wait for SMTP greeting
+      socketTimeout: 4000,       // 4 seconds maximum socket inactivity timeout
     });
 
     const info = await transporter.sendMail({

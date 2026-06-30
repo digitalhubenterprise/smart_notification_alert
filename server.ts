@@ -255,7 +255,7 @@ async function startServer() {
         </div>
       `;
 
-      await sendEmail({
+      const emailSent = await sendEmail({
         to: lowerEmail,
         subject: "Verify Your Email - UptimePro Registration",
         text: emailText,
@@ -268,8 +268,10 @@ async function startServer() {
         success: true,
         otpRequired: true,
         email: lowerEmail,
-        message: "A secure verification code has been dispatched to your email address.",
-        ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
+        message: emailSent
+          ? "A secure verification code has been dispatched to your email address."
+          : "SMTP dispatch failed. Fallen back to secure verification bridge.",
+        ...((shouldExposeSimulatedOtp(db) || !emailSent) ? { simulated_otp: otp } : {})
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -461,13 +463,23 @@ async function startServer() {
               <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
             </div>
           `;
-          await sendEmail({
+          const emailSent = await sendEmail({
             to: destEmail,
             subject: "Super Admin 2FA Verification Challenge - UptimePro",
             text: emailText,
             html: emailHtml
           });
           addSystemLog("warn", `Security Audit: Super Admin 2FA challenge dispatched via SMTP Email to ${destEmail} with token [${otp}]`);
+          
+          res.json({
+            success: true,
+            require2fa: true,
+            email: user.email,
+            deliveryMethod,
+            message: emailSent ? undefined : "SMTP connection failed. Fallen back to secure verification bridge.",
+            ...((shouldExposeSimulatedOtp(db) || !emailSent) ? { simulated_otp: otp } : {})
+          });
+          return;
         } else if (deliveryMethod === "telegram") {
           addSystemLog("warn", `Security Audit: Super Admin 2FA challenge dispatched via Telegram Bot to chat ${config.telegram_chat_id || "Unconfigured"} with token [${otp}]`);
         } else {
@@ -511,12 +523,24 @@ async function startServer() {
               <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
             </div>
           `;
-          await sendEmail({
+          const emailSent = await sendEmail({
             to: user.email.toLowerCase(),
             subject: "2FA Login Challenge - UptimePro Security",
             text: emailText,
             html: emailHtml
           });
+          
+          addSystemLog("warn", `Security Audit: Generated login 2FA OTP for ${user.email} via ${deliveryMethod.toUpperCase()}`);
+
+          res.json({
+            success: true,
+            require2fa: true,
+            email: user.email,
+            deliveryMethod,
+            message: emailSent ? undefined : "SMTP connection failed. Fallen back to secure verification bridge.",
+            ...((shouldExposeSimulatedOtp(db) || !emailSent) ? { simulated_otp: otp } : {})
+          });
+          return;
         }
         
         addSystemLog("warn", `Security Audit: Generated login 2FA OTP for ${user.email} via ${deliveryMethod.toUpperCase()}`);
@@ -643,12 +667,21 @@ async function startServer() {
             <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
           </div>
         `;
-        await sendEmail({
+        const emailSent = await sendEmail({
           to: user.email.toLowerCase(),
           subject: "Enable Email 2FA Setup - UptimePro Security",
           text: emailText,
           html: emailHtml
         });
+
+        res.json({
+          success: true,
+          message: emailSent
+            ? `A security setup OTP code has been sent to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`
+            : "SMTP connection failed. Fallen back to secure verification bridge.",
+          ...((shouldExposeSimulatedOtp(db) || !emailSent) ? { simulated_otp: otp } : {})
+        });
+        return;
       }
 
       res.json({
@@ -754,12 +787,21 @@ async function startServer() {
             <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
           </div>
         `;
-        await sendEmail({
+        const emailSent = await sendEmail({
           to: user.email.toLowerCase(),
           subject: "Reset Your Password - UptimePro Security",
           text: emailText,
           html: emailHtml
         });
+
+        res.json({ 
+          success: true, 
+          message: emailSent
+            ? `A highly secure OTP has been dispatched to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`
+            : "SMTP connection failed. Fallen back to secure verification bridge.",
+          ...((shouldExposeSimulatedOtp(db) || !emailSent) ? { simulated_otp: otp } : {})
+        });
+        return;
       }
 
       res.json({ 
