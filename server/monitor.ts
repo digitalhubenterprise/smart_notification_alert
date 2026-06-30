@@ -1,5 +1,6 @@
 import dns from "dns";
 import { readDb, writeDb, addSystemLog, Monitor, MonitorLog } from "./db.js";
+import { sendEmail } from "./email.js";
 
 // Keep track of runtime monitor timer refs
 let monitorIntervalRef: NodeJS.Timeout | null = null;
@@ -97,9 +98,7 @@ async function sendTelegramAlert(message: string, token: string, chatId: string)
  * Triggers Email Alert (Logged or sent)
  */
 async function sendEmailAlert(toEmail: string, subject: string, body: string, smtpFrom: string, smtpUser: string) {
-  // If SMTP is not fully configured, we simulate it cleanly and log it
-  console.log(`[EMAIL ALERT] To: ${toEmail}, From: ${smtpFrom}, Subject: ${subject}\nBody: ${body}`);
-  addSystemLog("info", `Email notification dispatched to ${toEmail}: "${subject}".`);
+  await sendEmail({ to: toEmail, subject, text: body });
 }
 
 /**

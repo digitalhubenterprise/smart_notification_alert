@@ -70,6 +70,9 @@ export default function App() {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerChatId, setRegisterChatId] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isVerifyingRegisterOtp, setIsVerifyingRegisterOtp] = useState(false);
+  const [registerOtp, setRegisterOtp] = useState("");
+  const [registerSimulatedOtp, setRegisterSimulatedOtp] = useState<string | null>(null);
 
   // Password Reset / Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
@@ -114,6 +117,7 @@ export default function App() {
   // Refs for API request optimization (prevents concurrent fetches & race conditions)
   const abortControllerRef = useRef<AbortController | null>(null);
   const isFetchingRef = useRef<boolean>(false);
+  const profileSyncRetryCount = useRef<number>(0);
 
   // Auto-abort fetching on component unmount
   useEffect(() => {
@@ -191,9 +195,11 @@ export default function App() {
         apiFetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, options)
       ]);
 
-      if (userRes.status === 401 || userRes.status === 404) {
+      if (userRes.status === 401 || userRes.status === 403 || userRes.status === 404) {
         const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
-        if (isLoggedInVal) {
+        // Only retry on 404 (Not Found) in case of rare database replication propagation latency
+        if (userRes.status === 404 && isLoggedInVal && profileSyncRetryCount.current < 5) {
+          profileSyncRetryCount.current += 1;
           setIsProfileSyncing(true);
           setError(null);
           // Auto-retry fetching after 2 seconds to check if profile has propagated
@@ -203,6 +209,7 @@ export default function App() {
           return;
         }
 
+        profileSyncRetryCount.current = 0;
         setIsLoggedIn(false);
         setActivePage("login");
         localStorage.removeItem("uptimepro_isLoggedIn");
@@ -211,7 +218,8 @@ export default function App() {
         localStorage.removeItem("uptimepro_loginPassword");
         localStorage.removeItem("uptimepro_authToken");
         setUser(null);
-        setAuthError("Your session expired or your profile could not be found. Please register or log in again.");
+        setIsProfileSyncing(false);
+        setAuthError(userRes.status === 403 ? "Access Denied. Session credentials do not match. Please log in again." : "Your session expired or your profile could not be synced. Please register or log in again.");
         return;
       }
 
@@ -227,7 +235,8 @@ export default function App() {
         // Handle edge case where User profile failed to load but the user is authenticated (Profile Syncing)
         if (failedRes && failedRes.name === "User profile") {
           const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
-          if (isLoggedInVal) {
+          if (isLoggedInVal && profileSyncRetryCount.current < 5) {
+            profileSyncRetryCount.current += 1;
             setIsProfileSyncing(true);
             setError(null);
             setTimeout(() => {
@@ -259,8 +268,9 @@ export default function App() {
         }
       }
 
-       setUser(userData);
+      setUser(userData);
       setIsProfileSyncing(false);
+      profileSyncRetryCount.current = 0;
       setActiveRole(isLocalAdmin ? "admin" : "subscriber");
       setAllUsers(allUsersData);
       setMonitors(monitorsData);
@@ -307,8 +317,7 @@ export default function App() {
   // On first mount, boot data using current email only if user is logged in
   useEffect(() => {
     const isLoggedInVal = localStorage.getItem("uptimepro_isLoggedIn") === "true";
-    const token = localStorage.getItem("uptimepro_authToken");
-    if (isLoggedInVal && token) {
+    if (isLoggedInVal) {
       const activeEmail = localStorage.getItem("uptimepro_loginEmail") || loginEmail;
       loadPlatformData(false, activeEmail);
     } else {
@@ -475,6 +484,13 @@ export default function App() {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
+
+    // Validate password complexity requirements
+    if (registerPassword.length < 8 || !/[0-9]/.test(registerPassword) || !/[^A-Za-z0-9]/.test(registerPassword)) {
+      setAuthError("Password complexity requirements not met: Password must be at least 8 characters long, contain at least one number, and contain at least one special character.");
+      return;
+    }
+
     setIsRegistering(true);
 
     try {
@@ -492,6 +508,13 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "TLS Registration failed.");
+      }
+
+      if (data.otpRequired) {
+        setIsVerifyingRegisterOtp(true);
+        setRegisterSimulatedOtp(data.simulated_otp || null);
+        setAuthSuccess(data.message || "A secure verification code has been dispatched to your email address.");
+        return;
       }
 
       setAuthSuccess(`Secure node profile registered! You can now log in using your password.`);
@@ -513,6 +536,50 @@ export default function App() {
       if (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("exist")) {
         setForgotEmail(registerEmail);
       }
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  // Registration OTP Verification Handler
+  const handleRegisterVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsRegistering(true);
+
+    try {
+      const res = await apiFetch("/api/auth/register-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: registerEmail,
+          otp: registerOtp
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Email verification failed.");
+      }
+
+      setAuthSuccess(`Your email has been verified and your profile registered successfully! You can now log in.`);
+      setLoginEmail(registerEmail);
+      setLoginPassword("");
+      
+      // Clear registration form and states
+      setRegisterName("");
+      setRegisterEmail("");
+      setRegisterPhone("");
+      setRegisterPassword("");
+      setRegisterChatId("");
+      setRegisterOtp("");
+      setRegisterSimulatedOtp(null);
+      setIsVerifyingRegisterOtp(false);
+
+      // Switch to login view
+      setActivePage("login");
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to verify registration code.");
     } finally {
       setIsRegistering(false);
     }
@@ -555,6 +622,13 @@ export default function App() {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
+
+    // Validate password complexity requirements
+    if (forgotNewPassword.length < 8 || !/[0-9]/.test(forgotNewPassword) || !/[^A-Za-z0-9]/.test(forgotNewPassword)) {
+      setAuthError("Password complexity requirements not met: Password must be at least 8 characters long, contain at least one number, and contain at least one special character.");
+      return;
+    }
+
     setIsVerifyingOtp(true);
 
     try {
@@ -884,6 +958,23 @@ export default function App() {
           <div className="text-[10px] text-slate-400 font-mono bg-slate-100 px-3 py-1.5 rounded-lg inline-block">
             Status: Propagating to blockchain registry...
           </div>
+          <div className="pt-2">
+            <button
+              onClick={() => {
+                setIsLoggedIn(false);
+                setActivePage("login");
+                setIsProfileSyncing(false);
+                setUser(null);
+                localStorage.removeItem("uptimepro_isLoggedIn");
+                localStorage.removeItem("uptimepro_activePage");
+                localStorage.removeItem("uptimepro_authToken");
+                apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 font-bold underline cursor-pointer p-2 transition-all"
+            >
+              Cancel & Sign Out
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1140,120 +1231,187 @@ export default function App() {
 
           {/* VIEW: REGISTER PORTAL */}
           {activePage === "register" && (
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
-                    placeholder="E.g. John Doe"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                  />
-                </div>
+            isVerifyingRegisterOtp ? (
+              <form onSubmit={handleRegisterVerifySubmit} className="space-y-4">
+                <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                  <div className="text-center pb-2">
+                    <p className="text-xs text-slate-300 font-medium">
+                      We have sent a 6-digit registration OTP to your email address:
+                    </p>
+                    <p className="text-xs font-bold text-indigo-400 mt-1 font-mono">{registerEmail}</p>
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block text-center">
+                      6-Digit Verification Code
+                    </label>
                     <input
-                      type="email"
+                      type="text"
                       required
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      placeholder="operator@domain.com"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      maxLength={6}
+                      value={registerOtp}
+                      onChange={(e) => setRegisterOtp(e.target.value.replace(/\D/g, ""))}
+                      placeholder="e.g. 123456"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-center text-sm font-mono tracking-widest text-white outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Phone Number</label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
-                    <input
-                      type="tel"
-                      required
-                      value={registerPhone}
-                      onChange={(e) => setRegisterPhone(e.target.value)}
-                      placeholder="+1 (555) 000-0000"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
-                    <input
-                      type="password"
-                      required
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      placeholder="Minimum 8 characters"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </div>
-                  {/* Dynamic Password Strength Indicator */}
-                  {registerPassword && (
-                    <div className="pt-2 space-y-1">
-                      <div className="flex justify-between items-center text-[9px]">
-                        <span className="text-slate-500 uppercase tracking-widest font-bold">Password Strength:</span>
-                        <span className={getPasswordStrength(registerPassword).color}>
-                          {getPasswordStrength(registerPassword).label}
-                        </span>
+                  {registerSimulatedOtp && (
+                    <div className="bg-amber-950/20 border border-amber-900/30 rounded-xl p-3 text-center">
+                      <div className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider mb-1">
+                        Developer Verification Bridge
                       </div>
-                      <div className="w-full h-1 bg-slate-850 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-300 ${getPasswordStrength(registerPassword).bar}`} />
+                      <div className="text-xs text-slate-300 font-semibold mb-2">
+                        Simulated Verification Code:
                       </div>
+                      <code className="px-3 py-1 bg-slate-900 text-amber-400 font-mono text-sm rounded-lg border border-slate-800 select-all block w-max mx-auto tracking-widest">
+                        {registerSimulatedOtp}
+                      </code>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Telegram Chat ID</label>
-                    <span className="text-[8px] text-slate-500 uppercase font-black px-1.5 py-0.5 bg-slate-850 rounded-sm">Optional</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={registerChatId}
-                    onChange={(e) => setRegisterChatId(e.target.value)}
-                    placeholder="E.g. 58190302"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
+                <div className="space-y-2">
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>{isRegistering ? "Verifying..." : "Verify & Complete Registration"}</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </button>
 
-              <button
-                type="submit"
-                disabled={isRegistering}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <span>{isRegistering ? "Registering account..." : "Create Account"}</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-
-              <div className="text-center pt-2">
-                <span className="text-[11px] text-slate-500">
-                  Already registered?{" "}
                   <button
                     type="button"
                     onClick={() => {
-                      setActivePage("login");
+                      setIsVerifyingRegisterOtp(false);
+                      setRegisterOtp("");
+                      setRegisterSimulatedOtp(null);
                       setAuthError(null);
                       setAuthSuccess(null);
                     }}
-                    className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                    className="w-full py-2 bg-slate-900/40 hover:bg-slate-900/60 text-slate-400 rounded-2xl text-[11px] font-bold transition-all border border-slate-800 cursor-pointer"
                   >
-                    Log in here &rarr;
+                    Change Registration Details
                   </button>
-                </span>
-              </div>
-            </form>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      placeholder="E.g. John Doe"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="email"
+                        required
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                        placeholder="operator@domain.com"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Phone Number</label>
+                    <div className="relative">
+                      <Smartphone className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="tel"
+                        required
+                        value={registerPhone}
+                        onChange={(e) => setRegisterPhone(e.target.value)}
+                        placeholder="+1 (555) 000-0000"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-medium outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Account Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="password"
+                        required
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        placeholder="Minimum 8 characters"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    {/* Dynamic Password Strength Indicator */}
+                    {registerPassword && (
+                      <div className="pt-2 space-y-1">
+                        <div className="flex justify-between items-center text-[9px]">
+                          <span className="text-slate-500 uppercase tracking-widest font-bold">Password Strength:</span>
+                          <span className={getPasswordStrength(registerPassword).color}>
+                            {getPasswordStrength(registerPassword).label}
+                          </span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-850 rounded-full overflow-hidden">
+                          <div className={`h-full transition-all duration-300 ${getPasswordStrength(registerPassword).bar}`} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Telegram Chat ID</label>
+                      <span className="text-[8px] text-slate-500 uppercase font-black px-1.5 py-0.5 bg-slate-850 rounded-sm">Optional</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={registerChatId}
+                      onChange={(e) => setRegisterChatId(e.target.value)}
+                      placeholder="E.g. 58190302"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 font-mono outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <span>{isRegistering ? "Sending Code..." : "Create Account & Verify Email"}</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+
+                <div className="text-center pt-2">
+                  <span className="text-[11px] text-slate-500">
+                    Already registered?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage("login");
+                        setAuthError(null);
+                        setAuthSuccess(null);
+                      }}
+                      className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                    >
+                      Log in here &rarr;
+                    </button>
+                  </span>
+                </div>
+              </form>
+            )
           )}
 
           {/* VIEW: FORGOT PASSWORD */}

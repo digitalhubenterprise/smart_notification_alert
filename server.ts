@@ -12,6 +12,7 @@ import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Payment, initializeDb, getDbStatus, reconnectDb } from "./server/db.js";
 import { startMonitorEngine } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
+import { sendEmail } from "./server/email.js";
 
 // Cryptographic helpers for password hashing
 function hashPassword(password: string, salt: string): string {
@@ -29,6 +30,13 @@ interface OtpRecord {
   deliveryMethod: "email" | "telegram" | "authenticator";
 }
 const tempOtps = new Map<string, OtpRecord>();
+
+// In-memory cache for pending registrations awaiting email OTP verification
+const tempRegistrations = new Map<string, {
+  otp: string;
+  expires: number;
+  data: any;
+}>();
 
 async function startServer() {
   const app = express();
@@ -153,8 +161,8 @@ async function startServer() {
 
   // Secure Cryptographic Authentication Endpoints
 
-  // Register Endpoint
-  app.post("/api/auth/register", (req, res) => {
+  // Register Endpoint - Sends registration OTP to verify email
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, email, phone, password, telegram_chat_id } = req.body;
       if (!name || !email || !password) {
@@ -162,8 +170,8 @@ async function startServer() {
         return;
       }
 
-      if (password.length < 8) {
-        res.status(400).json({ error: "Cryptographic standard requires a password of at least 8 characters." });
+      if (password.length < 8 || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        res.status(400).json({ error: "Password complexity requirements not met: Password must be at least 8 characters long, contain at least one number, and contain at least one special character." });
         return;
       }
 
@@ -187,6 +195,93 @@ async function startServer() {
         }
       }
 
+      // Generate secure 6-digit registration verification OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+      // Store pending registration data
+      tempRegistrations.set(lowerEmail, {
+        otp,
+        expires,
+        data: { name, email: lowerEmail, phone, password, telegram_chat_id }
+      });
+
+      // Dispatch verification email
+      const emailText = `Welcome to UptimePro!\n\nTo complete your secure registration, please use the following 6-digit email verification OTP:\n\nVerification Code: ${otp}\n\nThis verification code will expire in 5 minutes.\n\nThank you,\nUptimePro Security Team`;
+      const emailHtml = `
+        <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #4f46e5; margin-bottom: 16px;">Welcome to UptimePro!</h2>
+          <p style="font-size: 14px; line-height: 1.5;">To complete your secure registration, please verify your email address using the 6-digit verification code below:</p>
+          <div style="background-color: #e0e7ff; color: #3730a3; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0;">
+            ${otp}
+          </div>
+          <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code will expire in 5 minutes. If you did not request this registration, please disregard this email.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+        </div>
+      `;
+
+      await sendEmail({
+        to: lowerEmail,
+        subject: "Verify Your Email - UptimePro Registration",
+        text: emailText,
+        html: emailHtml
+      });
+
+      addSystemLog("warn", `Security Audit: Dispatched registration email verification OTP code to ${lowerEmail} (Valid for 5 mins)`);
+
+      res.json({
+        success: true,
+        otpRequired: true,
+        email: lowerEmail,
+        message: "A secure verification code has been dispatched to your email address.",
+        simulated_otp: otp
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Confirm and Complete Registration Endpoint
+  app.post("/api/auth/register-confirm", (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        res.status(400).json({ error: "Email address and verification OTP are required." });
+        return;
+      }
+
+      const lowerEmail = email.toLowerCase().trim();
+      const pending = tempRegistrations.get(lowerEmail);
+
+      if (!pending) {
+        res.status(400).json({ error: "No active registration request found or your verification window has expired. Please try registering again." });
+        return;
+      }
+
+      if (Date.now() > pending.expires) {
+        tempRegistrations.delete(lowerEmail);
+        res.status(400).json({ error: "The verification code has expired. Please register again to get a new code." });
+        return;
+      }
+
+      if (pending.otp !== String(otp).trim()) {
+        res.status(400).json({ error: "Cryptographic validation failed. Invalid OTP code entered." });
+        return;
+      }
+
+      // OTP matches! Finalize database insertion
+      const db = readDb();
+
+      // Final safety check for email uniqueness before database insert
+      const existingEmail = db.users.find((u: any) => u.email.toLowerCase() === lowerEmail);
+      if (existingEmail) {
+        tempRegistrations.delete(lowerEmail);
+        res.status(400).json({ error: "The email address has already been registered." });
+        return;
+      }
+
+      const { name, phone, password, telegram_chat_id } = pending.data;
       const salt = generateSalt();
       const hash = hashPassword(password, salt);
 
@@ -210,8 +305,11 @@ async function startServer() {
       db.users.push(newUser);
       writeDb(db);
 
-      addSystemLog("info", `Security Audit: New node registered successfully: ${newUser.email} (${newUser.id})`);
-      res.json({ success: true, user: getSafeUser(newUser) });
+      // Clean up verification data
+      tempRegistrations.delete(lowerEmail);
+
+      addSystemLog("info", `Security Audit: New user successfully verified email and registered: ${newUser.email} (${newUser.id})`);
+      res.json({ success: true, message: "Account verified and registered successfully!", user: getSafeUser(newUser) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -224,7 +322,7 @@ async function startServer() {
   });
 
   // Login / Challenge Verification Endpoint
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -315,7 +413,27 @@ async function startServer() {
         console.log(logMessage);
         
         if (deliveryMethod === "email") {
-          addSystemLog("warn", `Security Audit: Super Admin 2FA challenge dispatched via SMTP Email to ${config.site_brand_email || "admin@uptimepro.io"} with token [${otp}]`);
+          const destEmail = config.site_brand_email || "admin@uptimepro.io";
+          const emailText = `Hello Super Admin,\n\nA login attempt has been initiated for the UptimePro Admin Console. Please use the following 6-digit security token to authorize this session:\n\nSecurity Token: ${otp}\n\nThis token will expire in 5 minutes.\n\nThank you,\nUptimePro Security System`;
+          const emailHtml = `
+            <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <h2 style="color: #ef4444; margin-bottom: 16px;">UptimePro Admin 2FA Login</h2>
+              <p style="font-size: 14px; line-height: 1.5;">A login attempt was initiated for the Super Admin account. Use the secure 2FA challenge verification token below to authorize access:</p>
+              <div style="background-color: #fef2f2; color: #991b1b; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0; border: 1px solid #fee2e2;">
+                ${otp}
+              </div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code will expire in 5 minutes. If you did not initiate this login attempt, secure your Admin credentials immediately.</p>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+              <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+            </div>
+          `;
+          await sendEmail({
+            to: destEmail,
+            subject: "Super Admin 2FA Verification Challenge - UptimePro",
+            text: emailText,
+            html: emailHtml
+          });
+          addSystemLog("warn", `Security Audit: Super Admin 2FA challenge dispatched via SMTP Email to ${destEmail} with token [${otp}]`);
         } else if (deliveryMethod === "telegram") {
           addSystemLog("warn", `Security Audit: Super Admin 2FA challenge dispatched via Telegram Bot to chat ${config.telegram_chat_id || "Unconfigured"} with token [${otp}]`);
         } else {
@@ -344,6 +462,29 @@ async function startServer() {
 
         const logMessage = `[SECURITY 2FA OTP] Sent 6-digit 2FA login code [${otp}] to ${user.email} via ${deliveryMethod.toUpperCase()}. (Expires in 5 minutes)`;
         console.log(logMessage);
+        
+        if (deliveryMethod === "email") {
+          const emailText = `Hello,\n\nA login attempt was initiated for your UptimePro account. Please use the following 6-digit security token to complete your login:\n\nSecurity Token: ${otp}\n\nThis token will expire in 5 minutes.\n\nThank you,\nUptimePro Security Team`;
+          const emailHtml = `
+            <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <h2 style="color: #4f46e5; margin-bottom: 16px;">UptimePro 2FA Security Challenge</h2>
+              <p style="font-size: 14px; line-height: 1.5;">A login attempt was initiated for your account. Use the secure 2FA verification token below to complete your sign-in:</p>
+              <div style="background-color: #f1f5f9; color: #1e1b4b; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0;">
+                ${otp}
+              </div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code will expire in 5 minutes. If you did not initiate this login attempt, secure your password immediately.</p>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+              <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+            </div>
+          `;
+          await sendEmail({
+            to: user.email.toLowerCase(),
+            subject: "2FA Login Challenge - UptimePro Security",
+            text: emailText,
+            html: emailHtml
+          });
+        }
+        
         addSystemLog("warn", `Security Audit: Generated login 2FA OTP for ${user.email} via ${deliveryMethod.toUpperCase()}`);
 
         res.json({
@@ -423,7 +564,7 @@ async function startServer() {
   });
 
   // 2FA Setup OTP Request Endpoint
-  app.post("/api/auth/2fa/request-enable", (req, res) => {
+  app.post("/api/auth/2fa/request-enable", async (req, res) => {
     try {
       const { delivery_method } = req.body;
       if (!delivery_method || (delivery_method !== "email" && delivery_method !== "telegram")) {
@@ -453,6 +594,28 @@ async function startServer() {
       const logMessage = `[SECURITY SETUP 2FA OTP] Sent 6-digit setup code [${otp}] to ${user.email} via ${delivery_method.toUpperCase()} for enabling 2FA. (Expires in 5 minutes)`;
       console.log(logMessage);
       addSystemLog("warn", `Security Audit: Generated setup 2FA OTP for ${user.email} via ${delivery_method.toUpperCase()}`);
+
+      if (delivery_method === "email") {
+        const emailText = `Hello,\n\nYou have requested to enable Email Two-Factor Authentication (2FA) for your UptimePro account. Please use the following 6-digit setup verification code:\n\nSetup Code: ${otp}\n\nThis verification code is valid for 5 minutes.\n\nThank you,\nUptimePro Security Team`;
+        const emailHtml = `
+          <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #4f46e5; margin-bottom: 16px;">UptimePro 2FA Verification Setup</h2>
+            <p style="font-size: 14px; line-height: 1.5;">You are setting up Email Two-Factor Authentication (2FA) for your account. Please use the 6-digit verification code below to authorize the setup:</p>
+            <div style="background-color: #f1f5f9; color: #1e1b4b; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code will expire in 5 minutes. If you did not request this setup, please contact UptimePro support immediately.</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+          </div>
+        `;
+        await sendEmail({
+          to: user.email.toLowerCase(),
+          subject: "Enable Email 2FA Setup - UptimePro Security",
+          text: emailText,
+          html: emailHtml
+        });
+      }
 
       res.json({
         success: true,
@@ -517,7 +680,7 @@ async function startServer() {
   });
 
   // Request Password Reset / OTP Generation
-  app.post("/api/auth/reset-request", (req, res) => {
+  app.post("/api/auth/reset-request", async (req, res) => {
     try {
       const { email, delivery_method } = req.body;
       if (!email || !delivery_method) {
@@ -543,6 +706,28 @@ async function startServer() {
       console.log(logMessage);
       addSystemLog("warn", `Security Audit: Generated OTP for ${user.email} reset via ${delivery_method.toUpperCase()}`);
 
+      if (delivery_method === "email") {
+        const emailText = `Hello,\n\nYou have requested to reset your password for UptimePro. Please use the following 6-digit verification code to complete the process:\n\nVerification Code: ${otp}\n\nThis verification code is valid for 5 minutes.\n\nThank you,\nUptimePro Security Team`;
+        const emailHtml = `
+          <div style="font-family: sans-serif; padding: 20px; background-color: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #4f46e5; margin-bottom: 16px;">UptimePro Password Reset</h2>
+            <p style="font-size: 14px; line-height: 1.5;">You requested a password reset for your account. Please use the 6-digit verification code below to authorize the password change:</p>
+            <div style="background-color: #f1f5f9; color: #1e1b4b; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; margin: 24px 0;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This verification code will expire in 5 minutes. If you did not request a password reset, please secure your account credentials immediately.</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="font-size: 11px; color: #94a3b8; text-align: center;">UptimePro &bull; Secure Decentralized Network Monitoring</p>
+          </div>
+        `;
+        await sendEmail({
+          to: user.email.toLowerCase(),
+          subject: "Reset Your Password - UptimePro Security",
+          text: emailText,
+          html: emailHtml
+        });
+      }
+
       res.json({ 
         success: true, 
         message: `A highly secure OTP has been dispatched to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`,
@@ -563,8 +748,8 @@ async function startServer() {
         return;
       }
 
-      if (new_password.length < 8) {
-        res.status(400).json({ error: "New password must be at least 8 characters for cryptographic security." });
+      if (new_password.length < 8 || !/[0-9]/.test(new_password) || !/[^A-Za-z0-9]/.test(new_password)) {
+        res.status(400).json({ error: "Password complexity requirements not met: Password must be at least 8 characters long, contain at least one number, and contain at least one special character." });
         return;
       }
 
