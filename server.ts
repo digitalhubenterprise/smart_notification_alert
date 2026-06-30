@@ -181,6 +181,18 @@ async function startServer() {
     return token;
   }
 
+  function shouldExposeSimulatedOtp(db: any): boolean {
+    if (process.env.NODE_ENV === "production") {
+      return false;
+    }
+    const hasSmtp = !!db.config.smtp_host && !!db.config.smtp_user;
+    const hasTelegram = !!db.config.telegram_bot_token && !!db.config.telegram_chat_id;
+    if (hasSmtp || hasTelegram) {
+      return false;
+    }
+    return true;
+  }
+
   // Secure Cryptographic Authentication Endpoints
 
   // Register Endpoint - Sends registration OTP to verify email
@@ -257,7 +269,7 @@ async function startServer() {
         otpRequired: true,
         email: lowerEmail,
         message: "A secure verification code has been dispatched to your email address.",
-        simulated_otp: otp
+        ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -467,7 +479,7 @@ async function startServer() {
           require2fa: true,
           email: user.email,
           deliveryMethod,
-          simulated_otp: otp
+          ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
         });
         return;
       }
@@ -514,7 +526,7 @@ async function startServer() {
           require2fa: true,
           email: user.email,
           deliveryMethod,
-          simulated_otp: otp
+          ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
         });
         return;
       }
@@ -642,7 +654,7 @@ async function startServer() {
       res.json({
         success: true,
         message: `A security setup OTP code has been sent to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`,
-        simulated_otp: otp
+        ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -753,8 +765,7 @@ async function startServer() {
       res.json({ 
         success: true, 
         message: `A highly secure OTP has been dispatched to your ${delivery_method === "email" ? "Email Inbox" : "Telegram Bot Chat"}.`,
-        // Include OTP in response for simulation so the user can easily copy and paste it!
-        simulated_otp: otp 
+        ...(shouldExposeSimulatedOtp(db) ? { simulated_otp: otp } : {})
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
