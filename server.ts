@@ -103,6 +103,7 @@ async function startServer() {
       "/auth/login",
       "/auth/login-2fa",
       "/auth/register",
+      "/auth/register-confirm",
       "/auth/reset-request",
       "/auth/reset-verify",
       "/auth/logout"
