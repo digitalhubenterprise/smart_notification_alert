@@ -1,5 +1,5 @@
 import { apiFetch } from "./lib/api";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Globe, 
   Shield, 
@@ -110,6 +110,19 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Refs for API request optimization (prevents concurrent fetches & race conditions)
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
+
+  // Auto-abort fetching on component unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Persistent Storage Sync Effects
   useEffect(() => {
     localStorage.setItem("uptimepro_isLoggedIn", String(isLoggedIn));
@@ -141,6 +154,21 @@ export default function App() {
 
   // Trigger global data refresh
   const loadPlatformData = async (silent = false, customEmail?: string) => {
+    // loading state check to ignore concurrent fetch requests
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    // Abort any outstanding previous sync request to prevent race conditions
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create a new AbortController for the current fetch batch
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    isFetchingRef.current = true;
+
     if (!silent) setIsRefreshing(true);
     try {
       const activeEmail = customEmail || loginEmail || localStorage.getItem("uptimepro_loginEmail") || "subscriber@uptimepro.io";
@@ -149,13 +177,17 @@ export default function App() {
       };
       const token = localStorage.getItem("uptimepro_authToken");
       if (token) headers["x-auth-token"] = token;
+
+      // Pass the abort signal in options
+      const options = { headers, signal: controller.signal };
+
       // Parallel fetches for speed and reliability
       const [userRes, monitorsRes, paymentsRes, configRes, plansRes] = await Promise.all([
-        apiFetch(`/api/user?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        apiFetch(`/api/monitors?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        apiFetch(`/api/payment/history?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        apiFetch(`/api/config?email=${encodeURIComponent(activeEmail)}`, { headers }),
-        apiFetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, { headers })
+        apiFetch(`/api/user?email=${encodeURIComponent(activeEmail)}`, options),
+        apiFetch(`/api/monitors?email=${encodeURIComponent(activeEmail)}`, options),
+        apiFetch(`/api/payment/history?email=${encodeURIComponent(activeEmail)}`, options),
+        apiFetch(`/api/config?email=${encodeURIComponent(activeEmail)}`, options),
+        apiFetch(`/api/plans?email=${encodeURIComponent(activeEmail)}`, options)
       ]);
 
       if (userRes.status === 401) {
@@ -195,7 +227,7 @@ export default function App() {
       
       let allUsersData = [];
       if (isLocalAdmin) {
-        const allUsersRes = await apiFetch(`/api/admin/users?email=${encodeURIComponent(activeEmail)}`, { headers });
+        const allUsersRes = await apiFetch(`/api/admin/users?email=${encodeURIComponent(activeEmail)}`, options);
         if (allUsersRes.ok) {
           allUsersData = await allUsersRes.json();
         }
@@ -210,6 +242,10 @@ export default function App() {
       setPlans(plansData);
       setError(null);
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // Ignored, as this is due to a deliberate cancellation
+        return;
+      }
       setError(err.message || "Failed to sync with UptimePro Express backend. Re-trying...");
       // Auto-retry if it's the initialization error
       if (err.message?.includes("initializing")) {
@@ -218,8 +254,13 @@ export default function App() {
         }, 2000);
       }
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      // Only reset fetching state if the active controller was the one executing
+      if (abortControllerRef.current === controller) {
+        isFetchingRef.current = false;
+        setIsLoading(false);
+        setIsRefreshing(false);
+        abortControllerRef.current = null;
+      }
     }
   };
 
