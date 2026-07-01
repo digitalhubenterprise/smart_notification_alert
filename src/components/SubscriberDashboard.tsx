@@ -110,6 +110,7 @@ export default function SubscriberDashboard({
     price: user.plan_id === "free" ? 0 : user.plan_id === "pro" ? 10 : 50,
     max_monitors: user.plan_id === "free" ? 3 : user.plan_id === "pro" ? 20 : 100,
     min_interval_sec: user.plan_id === "free" ? 30 : user.plan_id === "pro" ? 10 : 5,
+    valid_days: user.plan_id === "free" ? 30 : user.plan_id === "pro" ? 30 : 365,
     is_active: true,
     features: []
   };
@@ -2153,7 +2154,7 @@ export default function SubscriberDashboard({
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
                     <span className="text-[9px] uppercase text-slate-400 font-bold block">Next Renewal / Expiry Date</span>
                     <span className="text-sm font-black text-indigo-600 mt-1 block font-mono">
-                      {user.plan_id === "free" ? "Lifetime Free" : new Date(new Date(user.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {(currentPlan.valid_days || basePlan.valid_days || 30) >= 9999 ? "Lifetime Free" : new Date(new Date(user.createdAt).getTime() + (currentPlan.valid_days || basePlan.valid_days || 30) * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">

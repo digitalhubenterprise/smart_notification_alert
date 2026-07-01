@@ -110,10 +110,14 @@ export default function AdminSubscribersTab({
 
   // Calculate remaining days Helper
   const getRemainingDaysText = (u: User) => {
-    if (u.plan_id === "free") {
+    const userPlan = plans.find((p) => p.id === u.plan_id);
+    const validDays = userPlan ? userPlan.valid_days : (u.plan_id === "free" ? 30 : u.plan_id === "pro" ? 30 : 365);
+    
+    if (validDays >= 9999) {
       return "Lifetime Free";
     }
-    const expiresAt = new Date(u.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000;
+    
+    const expiresAt = new Date(u.createdAt).getTime() + validDays * 24 * 60 * 60 * 1000;
     const remainingMs = expiresAt - Date.now();
     const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
     if (remainingDays <= 0) {
