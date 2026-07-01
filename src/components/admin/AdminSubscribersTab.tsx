@@ -56,6 +56,8 @@ export default function AdminSubscribersTab({
   const [editUserCreatedAt, setEditUserCreatedAt] = useState("");
   const [editUserCustomMaxMonitors, setEditUserCustomMaxMonitors] = useState<string>("");
   const [editUserCustomMinInterval, setEditUserCustomMinInterval] = useState<string>("");
+  const [editUserStatus, setEditUserStatus] = useState<"Active" | "Pending" | "Suspended">("Active");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const [copiedId, setCopiedId] = useState(false);
   const [isImpersonating, setIsImpersonating] = useState<string | null>(null);
@@ -134,6 +136,7 @@ export default function AdminSubscribersTab({
     setEditUserCreatedAt(user.createdAt || new Date().toISOString());
     setEditUserCustomMaxMonitors(user.custom_max_monitors !== undefined && user.custom_max_monitors !== null ? String(user.custom_max_monitors) : "");
     setEditUserCustomMinInterval(user.custom_min_interval_sec !== undefined && user.custom_min_interval_sec !== null ? String(user.custom_min_interval_sec) : "");
+    setEditUserStatus(user.status || "Active");
     setCopiedId(false);
   };
 
@@ -187,6 +190,40 @@ export default function AdminSubscribersTab({
     }
   };
 
+  const handleUpdateStatus = async (newStatus: "Active" | "Pending" | "Suspended") => {
+    if (!editingUser) return;
+    
+    onSuccess("");
+    onError("");
+    setIsUpdatingStatus(true);
+
+    try {
+      const res = await apiFetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update subscriber status.");
+      }
+
+      setEditUserStatus(newStatus);
+      onSuccess(`✅ Successfully updated status for ${editingUser.name} to ${newStatus}`);
+      onRefreshData();
+      
+      // Update local reference so changes match active UI
+      setEditingUser(prev => prev ? { ...prev, status: newStatus } : null);
+    } catch (err: any) {
+      onError(err.message || "Failed to execute status update.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const handleSaveUserEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
@@ -211,7 +248,8 @@ export default function AdminSubscribersTab({
           two_factor_telegram: editUser2faTelegram,
           createdAt: editUserCreatedAt,
           custom_max_monitors: editUserCustomMaxMonitors === "" ? null : Number(editUserCustomMaxMonitors),
-          custom_min_interval_sec: editUserCustomMinInterval === "" ? null : Number(editUserCustomMinInterval)
+          custom_min_interval_sec: editUserCustomMinInterval === "" ? null : Number(editUserCustomMinInterval),
+          status: editUserStatus
         })
       });
 
@@ -287,6 +325,15 @@ export default function AdminSubscribersTab({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-black text-slate-800 text-xs leading-none">{u.name}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase ${
+                          u.status === "Suspended"
+                            ? "bg-rose-50 text-rose-700 border border-rose-100"
+                            : u.status === "Pending"
+                            ? "bg-amber-50 text-amber-700 border border-amber-100"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                        }`}>
+                          {u.status || "Active"}
+                        </span>
                         {(u.two_factor_email || u.two_factor_telegram) && (
                           <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] font-black uppercase flex items-center gap-0.5">
                             <Lock className="w-2 h-2" />
@@ -448,6 +495,47 @@ export default function AdminSubscribersTab({
                   <div className="flex items-center gap-1.5 text-xs text-slate-700 font-mono mt-1">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>{new Date(editingUser.createdAt).toUTCString()}</span>
+                  </div>
+                </div>
+
+                {/* Subscriber Account Status Override Section */}
+                <div className="bg-white border border-slate-200 p-3 rounded-xl space-y-3 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-[9px] font-black uppercase text-indigo-600">Account Status Control</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                      editUserStatus === "Suspended"
+                        ? "bg-rose-50 text-rose-700 border border-rose-100"
+                        : editUserStatus === "Pending"
+                        ? "bg-amber-50 text-amber-700 border border-amber-100"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                    }`}>
+                      {editUserStatus}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] text-slate-500 uppercase font-black block">Update Subscriber Status</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={editUserStatus}
+                        onChange={(e) => setEditUserStatus(e.target.value as any)}
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 font-black outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Suspended">Suspended</option>
+                      </select>
+                      
+                      <button
+                        type="button"
+                        disabled={isUpdatingStatus || editUserStatus === (editingUser.status || "Active")}
+                        onClick={() => handleUpdateStatus(editUserStatus)}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        {isUpdatingStatus ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        Apply
+                      </button>
+                    </div>
                   </div>
                 </div>
 

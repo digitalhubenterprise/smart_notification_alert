@@ -14,6 +14,7 @@ export interface User {
   two_factor_telegram?: boolean;
   custom_max_monitors?: number;
   custom_min_interval_sec?: number;
+  status?: "Active" | "Pending" | "Suspended";
 }
 
 export interface Monitor {

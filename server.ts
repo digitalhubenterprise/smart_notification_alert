@@ -416,6 +416,12 @@ async function startServer() {
           return;
         }
 
+        if (user.status === "Suspended") {
+          addSystemLog("warn", `Security Audit: Prevented login attempt for suspended user ${user.name} (${user.email})`);
+          res.status(403).json({ error: "Your subscriber account is currently Suspended. Please contact system support." });
+          return;
+        }
+
         // Enforce cryptographic password match
         if (user.password_hash && user.password_salt) {
           const computed = hashPassword(password, user.password_salt);
@@ -2062,7 +2068,8 @@ async function startServer() {
         createdAt,
         reset_2fa,
         custom_max_monitors,
-        custom_min_interval_sec
+        custom_min_interval_sec,
+        status
       } = req.body;
       
       const db = readDb();
@@ -2083,6 +2090,7 @@ async function startServer() {
       if (two_factor_email !== undefined) user.two_factor_email = Boolean(two_factor_email);
       if (two_factor_telegram !== undefined) user.two_factor_telegram = Boolean(two_factor_telegram);
       if (createdAt !== undefined) user.createdAt = createdAt;
+      if (status !== undefined) user.status = status;
 
       if (custom_max_monitors !== undefined) {
         user.custom_max_monitors = custom_max_monitors === "" || custom_max_monitors === null ? undefined : Number(custom_max_monitors);
