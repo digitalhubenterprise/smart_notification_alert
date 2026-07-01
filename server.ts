@@ -13,6 +13,7 @@ import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Pa
 import { startMonitorEngine, resolveHostAndValidate } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
 import { sendEmail } from "./server/email.js";
+import { createThrottleMiddleware } from "./server/throttle.js";
 
 // Cryptographic helpers for password hashing
 function hashPassword(password: string, salt: string): string {
@@ -97,6 +98,37 @@ async function startServer() {
   });
   app.use("/api/auth/", authLimiter);
 
+  // Fine-grained request throttling to protect specific monitoring endpoints and sensitive flows
+  const monitorReadThrottle = createThrottleMiddleware({
+    windowMs: 60 * 1000, // 1 minute
+    max: 60, // Max 60 requests per minute for read-only actions
+    message: "Too many read queries on monitoring endpoints. Please slow down."
+  });
+
+  const monitorWriteThrottle = createThrottleMiddleware({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // Max 10 creations per minute
+    message: "Too many monitor creation requests. Please try again in a minute."
+  });
+
+  const monitorMutationThrottle = createThrottleMiddleware({
+    windowMs: 60 * 1000, // 1 minute
+    max: 15, // Max 15 modifications/deletes per minute
+    message: "Too many monitor modification requests. Please try again in a minute."
+  });
+
+  const manualCheckThrottle = createThrottleMiddleware({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Strict sliding window: max 5 active check runs per minute
+    message: "Too many manual checks triggered. Manual check is limited to 5 requests per minute."
+  });
+
+  const paymentVerifyThrottle = createThrottleMiddleware({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Max 5 payment verification scans per minute to prevent hash scanning/abuse
+    message: "Too many payment verification attempts. Please wait a minute before trying again."
+  });
+
   // Security Middleware
   app.use("/api", (req, res, next) => {
     const publicAuthPaths = [
@@ -128,12 +160,32 @@ async function startServer() {
     }
 
     const db = readDb();
-    const user = db.users.find((u: any) => u.apiToken === token);
-    if (!user) {
+    const userIndex = db.users.findIndex((u: any) => u.apiToken === token);
+    if (userIndex === -1) {
       return res.status(401).json({ error: "Unauthorized. Invalid session token." });
     }
+    const user = db.users[userIndex];
 
     (req as any).user = user;
+
+    // Security: Token rotation mechanism (every 5 minutes of activity, rotate the session token to prevent hijacking)
+    const ROTATION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    const tokenLastRotated = user.tokenLastRotated ? new Date(user.tokenLastRotated).getTime() : 0;
+    const now = Date.now();
+    if (!tokenLastRotated || (now - tokenLastRotated > ROTATION_INTERVAL_MS)) {
+      const newToken = crypto.randomBytes(24).toString("hex");
+      user.apiToken = newToken;
+      user.tokenLastRotated = new Date().toISOString();
+      db.users[userIndex] = user;
+      writeDb(db);
+      
+      // Update session cookie and add custom header
+      res.setHeader('Set-Cookie', 'uptimepro_session=' + newToken + '; HttpOnly; SameSite=None; Secure; Path=/');
+      res.setHeader('X-Rotated-Token', newToken);
+      res.setHeader('Access-Control-Expose-Headers', 'X-Rotated-Token');
+      
+      addSystemLog("info", `Security: Session token rotated successfully for user ${user.email} (Anti-Hijacking).`);
+    }
 
     // Admin endpoint protection
     const isAdminUser = user.id === "user-admin";
@@ -175,8 +227,9 @@ async function startServer() {
   // 2. API Routes
 
   function issueSession(user: any, res: any, db: any) {
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const token = crypto.randomBytes(24).toString("hex");
     user.apiToken = token;
+    user.tokenLastRotated = new Date().toISOString();
     writeDb(db);
     res.setHeader('Set-Cookie', 'uptimepro_session=' + token + '; HttpOnly; SameSite=None; Secure; Path=/');
     return token;
@@ -991,7 +1044,7 @@ async function startServer() {
   });
 
   // Get active monitors with uptime stats
-  app.get("/api/monitors", (req, res) => {
+  app.get("/api/monitors", monitorReadThrottle, (req, res) => {
     try {
       const db = readDb();
       const user = getActiveUser(req, db);
@@ -1029,7 +1082,7 @@ async function startServer() {
   });
 
   // Create a new monitor
-  app.post("/api/monitors", (req, res) => {
+  app.post("/api/monitors", monitorWriteThrottle, (req, res) => {
     try {
       const { name, url, monitor_type, interval_sec } = req.body;
       if (!name || !url) {
@@ -1098,7 +1151,7 @@ async function startServer() {
   });
 
   // Edit monitor configuration
-  app.put("/api/monitors/:id", (req, res) => {
+  app.put("/api/monitors/:id", monitorMutationThrottle, (req, res) => {
     try {
       const { id } = req.params;
       const { name, url, monitor_type, interval_sec } = req.body;
@@ -1164,7 +1217,7 @@ async function startServer() {
   });
 
   // Delete monitor
-  app.delete("/api/monitors/:id", (req, res) => {
+  app.delete("/api/monitors/:id", monitorMutationThrottle, (req, res) => {
     try {
       const { id } = req.params;
       const db = readDb();
@@ -1200,7 +1253,7 @@ async function startServer() {
   });
 
   // Fetch recent logs for a specific monitor
-  app.get("/api/monitors/:id/logs", (req, res) => {
+  app.get("/api/monitors/:id/logs", monitorReadThrottle, (req, res) => {
     try {
       const { id } = req.params;
       const db = readDb();
@@ -1235,7 +1288,7 @@ async function startServer() {
   });
 
   // Trigger manual immediate check
-  app.post("/api/monitors/:id/check", async (req, res) => {
+  app.post("/api/monitors/:id/check", manualCheckThrottle, async (req, res) => {
     try {
       const { id } = req.params;
       const db = readDb();
@@ -1325,7 +1378,7 @@ async function startServer() {
   });
 
   // Verify BEP-20 Payment
-  app.post("/api/payment/verify", async (req, res) => {
+  app.post("/api/payment/verify", paymentVerifyThrottle, async (req, res) => {
     try {
       const { txn_hash } = req.body;
       if (!txn_hash) {

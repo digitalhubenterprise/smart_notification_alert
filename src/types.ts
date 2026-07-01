@@ -15,6 +15,8 @@ export interface User {
   custom_max_monitors?: number;
   custom_min_interval_sec?: number;
   status?: "Active" | "Pending" | "Suspended";
+  apiToken?: string;
+  tokenLastRotated?: string;
 }
 
 export interface Monitor {

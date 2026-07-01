@@ -1,4 +1,5 @@
 import { apiFetch } from "../../lib/api";
+import { getSecureToken, setSecureToken } from "../../lib/session";
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { 
@@ -72,13 +73,13 @@ export default function AdminSubscribersTab({
         const data = await res.json();
         // Save original admin details before changing
         const currentEmail = localStorage.getItem("uptimepro_loginEmail");
-        const currentToken = localStorage.getItem("uptimepro_authToken");
+        const currentToken = getSecureToken("uptimepro_authToken");
         if (currentEmail) localStorage.setItem("uptimepro_adminEmail", currentEmail);
-        if (currentToken) localStorage.setItem("uptimepro_adminToken", currentToken);
+        if (currentToken) setSecureToken(currentToken, "uptimepro_adminToken");
 
         // Set user details
         localStorage.setItem("uptimepro_loginEmail", data.user.email);
-        localStorage.setItem("uptimepro_authToken", data.token);
+        setSecureToken(data.token, "uptimepro_authToken");
         localStorage.setItem("uptimepro_isLoggedIn", "true");
         localStorage.setItem("uptimepro_activeRole", "subscriber");
 

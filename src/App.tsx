@@ -1,4 +1,5 @@
 import { apiFetch } from "./lib/api";
+import { getSecureToken, setSecureToken, removeSecureToken } from "./lib/session";
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Globe, 
@@ -159,12 +160,7 @@ export default function App() {
 
   // Trigger global data refresh
   const loadPlatformData = async (silent = false, customEmail?: string) => {
-    // loading state check to ignore concurrent fetch requests
-    if (isFetchingRef.current) {
-      return;
-    }
-
-    // Abort any outstanding previous sync request to prevent race conditions
+    // Abort any outstanding previous sync request to prevent race conditions and handle StrictMode double-mount
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -180,7 +176,7 @@ export default function App() {
       const headers: Record<string, string> = {
         "x-user-email": activeEmail
       };
-      const token = localStorage.getItem("uptimepro_authToken");
+      const token = getSecureToken("uptimepro_authToken");
       if (token) headers["x-auth-token"] = token;
 
       // Pass the abort signal in options
@@ -216,7 +212,7 @@ export default function App() {
         localStorage.removeItem("uptimepro_activePage");
         localStorage.removeItem("uptimepro_loginEmail");
         localStorage.removeItem("uptimepro_loginPassword");
-        localStorage.removeItem("uptimepro_authToken");
+        removeSecureToken("uptimepro_authToken");
         setUser(null);
         setIsProfileSyncing(false);
         setAuthError(userRes.status === 403 ? "Access Denied. Session credentials do not match. Please log in again." : "Your session expired or your profile could not be synced. Please register or log in again.");
@@ -303,12 +299,12 @@ export default function App() {
 
   const handleStopImpersonation = () => {
     const adminEmail = localStorage.getItem("uptimepro_adminEmail");
-    const adminToken = localStorage.getItem("uptimepro_adminToken");
+    const adminToken = getSecureToken("uptimepro_adminToken");
     if (adminEmail && adminToken) {
       localStorage.setItem("uptimepro_loginEmail", adminEmail);
-      localStorage.setItem("uptimepro_authToken", adminToken);
+      setSecureToken(adminToken, "uptimepro_authToken");
       localStorage.removeItem("uptimepro_adminEmail");
-      localStorage.removeItem("uptimepro_adminToken");
+      removeSecureToken("uptimepro_adminToken");
       localStorage.setItem("uptimepro_activeRole", "admin");
       window.location.reload();
     }
@@ -370,7 +366,7 @@ export default function App() {
         localStorage.removeItem("uptimepro_activeRole");
         localStorage.removeItem("uptimepro_subscriberTab");
         localStorage.removeItem("uptimepro_adminTab");
-        localStorage.removeItem("uptimepro_authToken");
+        removeSecureToken("uptimepro_authToken");
         
         setAuthError("Your admin session has expired due to 30 minutes of inactivity. Please log in again.");
         
@@ -424,7 +420,7 @@ export default function App() {
       }
       localStorage.setItem("uptimepro_loginEmail", data.user.email);
       setLoginEmail(data.user.email);
-      localStorage.setItem("uptimepro_authToken", data.token);
+      setSecureToken(data.token, "uptimepro_authToken");
       setIsLoggedIn(true);
       
       // Load platform metrics synchronously for the newly logged-in account
@@ -461,7 +457,7 @@ export default function App() {
       }
       localStorage.setItem("uptimepro_loginEmail", data.user.email);
       setLoginEmail(data.user.email);
-      localStorage.setItem("uptimepro_authToken", data.token);
+      setSecureToken(data.token, "uptimepro_authToken");
       setIsLoggedIn(true);
       setRequire2fa(false);
       setSimulatedLoginOtp(null);
@@ -925,7 +921,7 @@ export default function App() {
             localStorage.removeItem("uptimepro_activeRole");
             localStorage.removeItem("uptimepro_subscriberTab");
             localStorage.removeItem("uptimepro_adminTab");
-            localStorage.removeItem("uptimepro_authToken");
+            removeSecureToken("uptimepro_authToken");
             apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
           }}
           className="w-full px-3 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-rose-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border border-rose-950 hover:border-rose-900/50"
@@ -982,7 +978,7 @@ export default function App() {
                 setUser(null);
                 localStorage.removeItem("uptimepro_isLoggedIn");
                 localStorage.removeItem("uptimepro_activePage");
-                localStorage.removeItem("uptimepro_authToken");
+                removeSecureToken("uptimepro_authToken");
                 apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
               }}
               className="text-xs text-slate-400 hover:text-slate-600 font-bold underline cursor-pointer p-2 transition-all"

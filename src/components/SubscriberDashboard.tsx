@@ -39,6 +39,8 @@ import {
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Monitor, MonitorLog, Payment, SubscriptionPlan } from "../types.ts";
+import { getSecureToken, setSecureToken, isValidHeaderValue } from "../lib/session";
+import { sanitizeRequestOptions, getAbsoluteUrl } from "../lib/api";
 
 interface SubscriberDashboardProps {
   user: User;
@@ -90,18 +92,67 @@ export default function SubscriberDashboard({
   const [monitorProtocolFilter, setMonitorProtocolFilter] = useState<"ALL" | "HTTP" | "Ping" | "Port">("ALL");
 
   // Secure request signing wrapper
-  const fetchWithAuth = (url: string, options: any = {}) => {
-    const headers: Record<string, string> = {
-      ...(options.headers || {}),
-      "x-user-email": user.email
-    };
-    const token = localStorage.getItem("uptimepro_authToken");
-    if (token) {
-      headers["x-auth-token"] = token;
+  const fetchWithAuth = async (url: string, options: any = {}) => {
+    const cleanHeaders: Record<string, string> = {};
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          if (value !== undefined && value !== null) {
+            const valStr = String(value);
+            if (isValidHeaderValue(valStr) && isValidHeaderValue(key)) {
+              cleanHeaders[key] = valStr;
+            }
+          }
+        });
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const valStr = String(value);
+            if (isValidHeaderValue(valStr) && isValidHeaderValue(key)) {
+              cleanHeaders[key] = valStr;
+            }
+          }
+        });
+      } else {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const valStr = String(value);
+            if (isValidHeaderValue(valStr) && isValidHeaderValue(key)) {
+              cleanHeaders[key] = valStr;
+            }
+          }
+        });
+      }
     }
+
+    if (user?.email && isValidHeaderValue(user.email)) {
+      cleanHeaders["x-user-email"] = user.email;
+    }
+
+    const token = getSecureToken("uptimepro_authToken");
+    if (token && isValidHeaderValue(token)) {
+      cleanHeaders["x-auth-token"] = token;
+    }
+
     const separator = url.includes("?") ? "&" : "?";
-    const finalUrl = `${url}${separator}email=${encodeURIComponent(user.email)}`;
-    return fetch(finalUrl, { ...options, headers });
+    const finalUrl = `${url}${separator}email=${encodeURIComponent(user?.email || "")}`;
+    
+    const fetchOptions = sanitizeRequestOptions(options);
+    fetchOptions.headers = cleanHeaders;
+
+    const absoluteUrl = getAbsoluteUrl(finalUrl);
+    const response = await fetch(absoluteUrl, fetchOptions);
+    
+    // Anti-hijacking seamless token rotation interception
+    try {
+      const rotatedToken = response.headers.get("x-rotated-token");
+      if (rotatedToken) {
+        setSecureToken(rotatedToken, "uptimepro_authToken");
+      }
+    } catch (err) {
+      // Suppress header extraction errors
+    }
+    return response;
   };
 
   const basePlan = plans.find((p) => p.id === user.plan_id) || {
