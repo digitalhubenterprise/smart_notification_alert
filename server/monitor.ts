@@ -9,7 +9,7 @@ const alertCooldowns: Record<string, number> = {}; // monitorId -> timestamp of 
 /**
  * Checks if an IP address is private (SSRF Protection)
  */
-function isPrivateIp(ip: string): boolean {
+export function isPrivateIp(ip: string): boolean {
   // Clean IP
   const cleanIp = ip.trim();
 
@@ -38,7 +38,7 @@ function isPrivateIp(ip: string): boolean {
 /**
  * Resolves a URL host to an IP address with SSRF validation
  */
-function resolveHostAndValidate(urlStr: string): Promise<{ ip: string; hostname: string }> {
+export function resolveHostAndValidate(urlStr: string): Promise<{ ip: string; hostname: string }> {
   return new Promise((resolve, reject) => {
     try {
       const parsedUrl = new URL(urlStr);

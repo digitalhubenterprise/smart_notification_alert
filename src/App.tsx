@@ -900,7 +900,7 @@ export default function App() {
         )}
 
         <div className="flex items-center justify-between text-xs px-1">
-          <span className="text-[9px] text-slate-500 uppercase font-mono tracking-wide">UptimePro v4.0</span>
+          <span className="text-[9px] text-slate-500 uppercase font-mono tracking-wide">UptimePro v5.0</span>
           <button
             onClick={() => loadPlatformData()}
             disabled={isRefreshing}
@@ -1790,7 +1790,7 @@ export default function App() {
           <div className="px-4 sm:px-6 lg:px-8 text-center space-y-2">
             <div className="flex items-center justify-center gap-1.5 text-slate-400">
               <Globe className="w-4 h-4 text-indigo-500" />
-              <span className="text-xs font-bold text-slate-500 font-mono">UptimePro Monitoring Engine v4.0</span>
+              <span className="text-xs font-bold text-slate-500 font-mono">UptimePro Monitoring Engine v5.0</span>
             </div>
             <p className="text-[11px] text-slate-400 max-w-md mx-auto">
               Protected against Server-Side Request Forgery (SSRF) hostname filters. Verifying crypto subscription transactions over public BSC RPC networks.

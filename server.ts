@@ -10,7 +10,7 @@ import cron from "node-cron";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, addSystemLog, addUserActivity, Monitor, MonitorLog, Payment, initializeDb, getDbStatus, reconnectDb } from "./server/db.js";
-import { startMonitorEngine } from "./server/monitor.js";
+import { startMonitorEngine, resolveHostAndValidate } from "./server/monitor.js";
 import { verifyBscTransaction } from "./server/bsc.js";
 import { sendEmail } from "./server/email.js";
 
@@ -1259,18 +1259,10 @@ async function startServer() {
       }
 
       // Check if domain is blacklisted / SSRF protection
-      let ip = "";
       try {
-        const parsedUrl = new URL(monitor.url);
-        const lookupPromise = new Promise<string>((resolve, reject) => {
-          dns.lookup(parsedUrl.hostname, (err, address) => {
-            if (err) reject(err);
-            else resolve(address || "");
-          });
-        });
-        ip = await lookupPromise;
+        await resolveHostAndValidate(monitor.url);
       } catch (dnsErr: any) {
-        res.status(400).json({ error: `DNS check failed: ${dnsErr.message}` });
+        res.status(400).json({ error: `SSRF/DNS check failed: ${dnsErr.message}` });
         return;
       }
 
