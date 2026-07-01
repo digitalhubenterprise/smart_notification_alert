@@ -99,6 +99,7 @@ export interface SubscriptionPlan {
   min_interval_sec: number;
   features: string[];
   is_active: boolean;
+  valid_days: number;
 }
 
 export interface BackupSnapshot {
@@ -151,7 +152,14 @@ export const DEFAULT_PLANS: SubscriptionPlan[] = [
     price: 0,
     max_monitors: 3,
     min_interval_sec: 30,
-    features: ["Up to 3 monitors", "30s min check interval", "Basic email logs", "Community support"],
+    valid_days: 30,
+    features: [
+      "Monitor up to 3 endpoints",
+      "30-second minimum check intervals",
+      "Standard HTTP & Ping checks",
+      "Basic Email outage logs (24h history)",
+      "Essential community support"
+    ],
     is_active: true
   },
   {
@@ -160,7 +168,18 @@ export const DEFAULT_PLANS: SubscriptionPlan[] = [
     price: 10,
     max_monitors: 20,
     min_interval_sec: 10,
-    features: ["Up to 20 monitors", "10s min check interval", "Instant Telegram alerts", "Outage delay thresholds", "Email incident dispatch"],
+    valid_days: 30,
+    features: [
+      "Monitor up to 20 endpoints",
+      "10-second minimum check intervals",
+      "HTTP, HTTPS, Ping, and Port checks",
+      "Instant Telegram bot & webhook alerts",
+      "SMTP server override credentials",
+      "Custom HTTP headers & POST payloads",
+      "SSL certificate expiration tracking",
+      "7-day detailed response-time logs",
+      "Priority email & live chat assistance"
+    ],
     is_active: true
   },
   {
@@ -169,7 +188,19 @@ export const DEFAULT_PLANS: SubscriptionPlan[] = [
     price: 50,
     max_monitors: 100,
     min_interval_sec: 5,
-    features: ["Up to 100 monitors", "5s min check interval", "Custom SMTP channels", "Priority processing queue", "24/7 dedicated alert relay"],
+    valid_days: 365,
+    features: [
+      "Monitor up to 100 endpoints",
+      "5-second high-frequency ping intervals",
+      "All check types (HTTP, Ping, TCP Port)",
+      "Custom branded status pages with SEO settings",
+      "Multi-channel alerting (Telegram, Email, SMS, Webhooks)",
+      "SLA compliance reports & CSV exports",
+      "Infinite log retention history & graphs",
+      "24/7 dedicated support representative hotline",
+      "API access keys & full CLI controller",
+      "Automatic database cloud backups & snapshots"
+    ],
     is_active: true
   }
 ];
@@ -640,6 +671,30 @@ export function readDb(): DatabaseSchema {
       dbCache = INITIAL_DB;
     }
   }
+
+  // Ensure and migrate valid_days + features in plans
+  if (dbCache && dbCache.plans) {
+    let changed = false;
+    dbCache.plans = dbCache.plans.map(p => {
+      const def = DEFAULT_PLANS.find(d => d.id === p.id);
+      if (p.valid_days === undefined) {
+        p.valid_days = def ? def.valid_days : (p.id === "free" ? 30 : p.id === "pro" ? 30 : 365);
+        changed = true;
+      }
+      if (def && (!p.features || p.features.length <= 5)) {
+        p.features = def.features;
+        changed = true;
+      }
+      return p;
+    });
+    if (changed) {
+      // Direct assignment and mark dirty
+      dbCache = { ...dbCache };
+      needsSave = true;
+      scheduleSave();
+    }
+  }
+
   return dbCache!;
 }
 

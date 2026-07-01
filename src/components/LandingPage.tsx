@@ -589,7 +589,7 @@ export default function LandingPage({ onLoginClick, onRegisterClick, plans = [] 
 
                     <div className="flex items-baseline gap-1.5 py-2">
                       <span className="text-4xl font-black text-white">${plan.price}</span>
-                      <span className="text-xs text-slate-400 font-medium">/ month</span>
+                      <span className="text-xs text-slate-400 font-medium">/ {plan.valid_days || 30} days</span>
                     </div>
 
                     <p className="text-xs text-slate-400 leading-relaxed font-medium">

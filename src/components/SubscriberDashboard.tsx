@@ -1306,7 +1306,7 @@ export default function SubscriberDashboard({
 
                       <div className="flex items-baseline">
                         <span className="text-4xl font-black text-slate-900 tracking-tight">${plan.price}</span>
-                        <span className="text-xs font-bold text-slate-400 ml-1">USDT/mo</span>
+                        <span className="text-xs font-bold text-slate-400 ml-1">USDT / {plan.valid_days || 30} days</span>
                       </div>
 
                       <ul className="text-xs text-slate-600 space-y-3 border-t border-slate-100 pt-5">
@@ -2646,7 +2646,7 @@ export default function SubscriberDashboard({
                           
                           <div className="flex items-baseline">
                             <span className="text-2xl font-black text-slate-900 tracking-tight">${plan.price}</span>
-                            <span className="text-[11px] font-bold text-slate-400 ml-1">USDT/mo</span>
+                            <span className="text-[11px] font-bold text-slate-400 ml-1">USDT / {plan.valid_days || 30} days</span>
                           </div>
 
                           <ul className="text-[11px] text-slate-500 space-y-1.5 border-t border-slate-100 pt-3">

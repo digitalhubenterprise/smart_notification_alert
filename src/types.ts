@@ -97,6 +97,7 @@ export interface SubscriptionPlan {
   min_interval_sec: number;
   features: string[];
   is_active: boolean;
+  valid_days: number;
 }
 
 export interface BackupSnapshot {

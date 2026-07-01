@@ -27,6 +27,7 @@ export default function AdminPlansTab({
   const [editPlanMinInterval, setEditPlanMinInterval] = useState(30);
   const [editPlanFeaturesText, setEditPlanFeaturesText] = useState("");
   const [editPlanIsActive, setEditPlanIsActive] = useState(true);
+  const [editPlanValidDays, setEditPlanValidDays] = useState(30);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
 
   const startEditPlan = (plan: SubscriptionPlan) => {
@@ -37,6 +38,7 @@ export default function AdminPlansTab({
     setEditPlanMinInterval(plan.min_interval_sec);
     setEditPlanFeaturesText(plan.features.join("\n"));
     setEditPlanIsActive(plan.is_active);
+    setEditPlanValidDays(plan.valid_days || 30);
   };
 
   const handleSavePlanEdit = async (e: React.FormEvent) => {
@@ -62,7 +64,8 @@ export default function AdminPlansTab({
           max_monitors: editPlanMaxMonitors,
           min_interval_sec: editPlanMinInterval,
           is_active: editPlanIsActive,
-          features: parsedFeatures
+          features: parsedFeatures,
+          valid_days: editPlanValidDays
         })
       });
 
@@ -119,13 +122,17 @@ export default function AdminPlansTab({
                     <span className="text-[8px] text-slate-400 block uppercase font-black">Max Quota</span>
                     <span className="font-black text-slate-800">{plan.max_monitors} targets</span>
                   </div>
-                  <div className="mt-0.5">
+                  <div>
                     <span className="text-[8px] text-slate-400 block uppercase font-black">Min Interval</span>
                     <span className="font-black text-slate-800">{plan.min_interval_sec}s check</span>
                   </div>
-                  <div className="mt-0.5">
-                    <span className="text-[8px] text-slate-400 block uppercase font-black">Status</span>
-                    <span className={`font-black ${plan.is_active ? "text-emerald-600" : "text-rose-500"}`}>
+                  <div>
+                    <span className="text-[8px] text-slate-400 block uppercase font-black">Valid Days</span>
+                    <span className="font-black text-slate-800">{plan.valid_days || 30} days</span>
+                  </div>
+                  <div className="col-span-2 pt-1.5 border-t border-slate-200/50 flex justify-between items-center mt-0.5">
+                    <span className="text-[8px] text-slate-400 uppercase font-black">Status</span>
+                    <span className={`font-black px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${plan.is_active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
                       {plan.is_active ? "Active" : "Disabled"}
                     </span>
                   </div>
@@ -225,7 +232,7 @@ export default function AdminPlansTab({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="space-y-1 md:col-span-1">
+              <div className="space-y-1 md:col-span-2">
                 <label className="text-[9px] text-slate-400 block font-bold uppercase">Plan Status</label>
                 <select
                   value={editPlanIsActive ? "true" : "false"}
@@ -235,6 +242,18 @@ export default function AdminPlansTab({
                   <option value="true">Active & Visible</option>
                   <option value="false">Blocked / Suspended</option>
                 </select>
+              </div>
+
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-[9px] text-slate-400 block font-bold uppercase">Valid Days (Duration)</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={editPlanValidDays}
+                  onChange={(e) => setEditPlanValidDays(Number(e.target.value))}
+                  className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold outline-none focus:border-indigo-500"
+                />
               </div>
             </div>
 

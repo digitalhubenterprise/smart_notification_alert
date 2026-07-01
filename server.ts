@@ -2668,7 +2668,7 @@ async function startServer() {
   app.put("/api/admin/plans/:id", (req, res) => {
     try {
       const { id } = req.params;
-      const { name, price, max_monitors, min_interval_sec, features, is_active } = req.body;
+      const { name, price, max_monitors, min_interval_sec, features, is_active, valid_days } = req.body;
       const db = readDb();
 
       const plan = db.plans.find((p) => p.id === id);
@@ -2683,6 +2683,7 @@ async function startServer() {
       if (min_interval_sec !== undefined) plan.min_interval_sec = Number(min_interval_sec);
       if (features !== undefined) plan.features = features;
       if (is_active !== undefined) plan.is_active = Boolean(is_active);
+      if (valid_days !== undefined) plan.valid_days = Number(valid_days);
 
       writeDb(db);
       addSystemLog("info", `Admin updated subscription plan details for tier: ${plan.name} (${id})`);
