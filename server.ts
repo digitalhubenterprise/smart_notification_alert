@@ -1724,6 +1724,47 @@ async function startServer() {
     }
   });
 
+  // Admin monitors list (All monitors in the system)
+  app.get("/api/admin/monitors", (req, res) => {
+    try {
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user || user.id !== "user-admin") {
+        res.status(403).json({ error: "Forbidden. Admin access required." });
+        return;
+      }
+
+      const allMonitors = db.monitors || [];
+
+      const enrichedMonitors = allMonitors.map((m: any) => {
+        const logs = db.logs.filter((l: any) => l.monitor_id === m.id);
+        const total = logs.length;
+        const upCount = logs.filter((l: any) => l.status === "up").length;
+        const uptimePercent = total > 0 ? (upCount / total) * 100 : 100;
+        
+        const upLogs = logs.filter((l: any) => l.status === "up");
+        const avgResponse = upLogs.length > 0 
+          ? Math.round(upLogs.reduce((sum: number, l: any) => sum + (l.response_time || 0), 0) / upLogs.length) 
+          : 0;
+
+        const monitorOwner = db.users.find((u: any) => u.id === m.user_id);
+
+        return {
+          ...m,
+          uptime_percentage: Number(uptimePercent.toFixed(2)),
+          average_response_time_ms: avgResponse,
+          total_checks: total,
+          owner_name: monitorOwner ? monitorOwner.name : "Unknown",
+          owner_email: monitorOwner ? monitorOwner.email : "Unknown"
+        };
+      });
+
+      res.json(enrichedMonitors);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Admin global statistics endpoint
   app.get("/api/admin/stats", (req, res) => {
     try {

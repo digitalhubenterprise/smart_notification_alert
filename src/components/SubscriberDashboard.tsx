@@ -82,6 +82,8 @@ export default function SubscriberDashboard({
   // General States
   const [errorMsg, setErrorMsg] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
 
   // Filter States
   const [monitorSearch, setMonitorSearch] = useState("");
@@ -512,9 +514,15 @@ export default function SubscriberDashboard({
   };
 
   // Delete Monitor
-  const handleDeleteMonitor = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteMonitor = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this monitor? All historical metrics will be erased.")) return;
+    const monitor = monitors.find((m) => m.id === id);
+    setDeleteConfirmName(monitor ? monitor.name : "this monitor");
+    setDeleteConfirmId(id);
+  };
+
+  // Perform actual Deletion
+  const performDeleteMonitor = async (id: string) => {
     setLoadingAction(`delete-${id}`);
     try {
       const res = await fetchWithAuth(`/api/monitors/${id}`, { method: "DELETE" });
@@ -528,6 +536,7 @@ export default function SubscriberDashboard({
       console.error(err);
     } finally {
       setLoadingAction(null);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -2685,6 +2694,38 @@ export default function SubscriberDashboard({
           </div>
         )}
       </AnimatePresence>
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in" id="delete-confirmation-modal">
+          <div className="bg-white border border-slate-150 rounded-2xl w-full max-w-md overflow-hidden shadow-xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 bg-rose-50 rounded-xl">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="font-black text-slate-900 text-sm">Delete Monitor?</h3>
+            </div>
+            <p className="text-xs text-slate-500 font-bold">
+              Are you absolutely sure you want to delete <span className="text-slate-800 font-black">"{deleteConfirmName}"</span>? This action is permanent and all telemetry log history will be permanently destroyed.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-xs text-slate-700 font-bold rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => performDeleteMonitor(deleteConfirmId)}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

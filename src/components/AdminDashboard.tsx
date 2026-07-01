@@ -9,12 +9,13 @@ import AdminSubscribersTab from "./admin/AdminSubscribersTab.tsx";
 import AdminPlansTab from "./admin/AdminPlansTab.tsx";
 import AdminLogsTab from "./admin/AdminLogsTab.tsx";
 import AdminBackupsTab from "./admin/AdminBackupsTab.tsx";
+import AdminMonitorsTab from "./admin/AdminMonitorsTab.tsx";
 
 interface AdminDashboardProps {
   users: User[];
   config: AlertConfig | null;
   onRefreshData: () => void;
-  activeTab?: "dashboard" | "settings" | "subscribers" | "logs" | "plans" | "backups";
+  activeTab?: "dashboard" | "settings" | "subscribers" | "logs" | "plans" | "backups" | "monitors";
   plans?: SubscriptionPlan[];
 }
 
@@ -108,6 +109,13 @@ export default function AdminDashboard({
       {activeTab === "backups" && (
         <AdminBackupsTab
           onRefreshData={onRefreshData}
+          onSuccess={showSuccess}
+          onError={showError}
+        />
+      )}
+
+      {activeTab === "monitors" && (
+        <AdminMonitorsTab
           onSuccess={showSuccess}
           onError={showError}
         />

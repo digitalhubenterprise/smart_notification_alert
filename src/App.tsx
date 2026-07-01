@@ -93,7 +93,7 @@ export default function App() {
   const [subscriberTab, setSubscriberTab] = useState<"monitors" | "wallet" | "billing" | "history" | "settings">(() => {
     return (localStorage.getItem("uptimepro_subscriberTab") as any) || "monitors";
   });
-  const [adminTab, setAdminTab] = useState<"dashboard" | "settings" | "subscribers" | "logs" | "plans" | "backups">(() => {
+  const [adminTab, setAdminTab] = useState<"dashboard" | "settings" | "subscribers" | "logs" | "plans" | "backups" | "monitors">(() => {
     return (localStorage.getItem("uptimepro_adminTab") as any) || "dashboard";
   });
 
@@ -818,6 +818,21 @@ export default function App() {
               >
                 <Users className={`w-4 h-4 ${adminTab === "subscribers" ? "text-indigo-500" : ""}`} />
                 <span>Subscriber</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setAdminTab("monitors");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-all cursor-pointer ${
+                  adminTab === "monitors"
+                    ? "bg-slate-850 text-white border-l-4 border-indigo-500 font-bold"
+                    : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+                }`}
+              >
+                <Globe className={`w-4 h-4 ${adminTab === "monitors" ? "text-indigo-500" : ""}`} />
+                <span>Monitor All List</span>
               </button>
 
               <button

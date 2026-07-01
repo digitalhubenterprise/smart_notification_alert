@@ -627,7 +627,14 @@ export function readDb(): DatabaseSchema {
   if (!dbCache) {
     ensureDbExists();
     try {
-      dbCache = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+      const dataStr = fs.readFileSync(DB_PATH, "utf8");
+      if (dataStr.includes("this-domain-does-not-exist-uptimepro-test.coms")) {
+        const normalizedStr = dataStr.replace(/this-domain-does-not-exist-uptimepro-test\.coms/g, "this-domain-does-not-exist-uptimepro-test.com");
+        dbCache = JSON.parse(normalizedStr);
+        fs.writeFileSync(DB_PATH, normalizedStr, "utf8");
+      } else {
+        dbCache = JSON.parse(dataStr);
+      }
     } catch {
       dbCache = INITIAL_DB;
     }
