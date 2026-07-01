@@ -23,7 +23,7 @@ export interface Monitor {
   url: string;
   monitor_type: "HTTP" | "Ping" | "Port";
   interval_sec: number;
-  status: "up" | "down" | "pending";
+  status: "up" | "down" | "pending" | "paused";
   last_check?: string;
   consecutive_failures: number;
   alert_sent: boolean;

@@ -6,6 +6,7 @@ import {
   Trash2, 
   Edit2, 
   Play, 
+  Pause,
   Check, 
   X, 
   Activity, 
@@ -34,7 +35,7 @@ export default function AdminMonitorsTab({
 }: AdminMonitorsTabProps) {
   const [monitors, setMonitors] = useState<AdminMonitor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "up" | "down" | "pending">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "up" | "down" | "pending" | "paused">("ALL");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "HTTP" | "Ping" | "Port">("ALL");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -48,6 +49,22 @@ export default function AdminMonitorsTab({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
+  // Toast notifications state
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "error" | "info" }[]>([]);
+
+  // Bulk selection states
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  const addToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
   const fetchAllMonitors = async () => {
     setIsLoading(true);
     try {
@@ -57,10 +74,12 @@ export default function AdminMonitorsTab({
         setMonitors(data);
       } else {
         onError("Failed to fetch administrative monitors list.");
+        addToast("Failed to fetch administrative monitors list.", "error");
       }
     } catch (err: any) {
       console.error(err);
       onError(err.message || "An error occurred while loading monitors.");
+      addToast(err.message || "An error occurred while loading monitors.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -99,15 +118,19 @@ export default function AdminMonitorsTab({
       const res = await apiFetch(`/api/monitors/${id}/check`, { method: "POST" });
       if (res.ok) {
         const result = await res.json();
-        onSuccess(`Immediate diagnostic check successfully dispatched for "${result.monitor?.name || 'Monitor'}". Status: ${result.monitor?.status?.toUpperCase()}`);
+        const msg = `Immediate diagnostic check successfully dispatched for "${result.monitor?.name || 'Monitor'}". Status: ${result.monitor?.status?.toUpperCase()}`;
+        onSuccess(msg);
+        addToast(msg, "success");
         fetchAllMonitors();
       } else {
         const errData = await res.json();
         onError(errData.error || "Failed to trigger quick diagnostic check.");
+        addToast(errData.error || "Failed to trigger quick diagnostic check.", "error");
       }
     } catch (err: any) {
       console.error(err);
       onError(err.message || "Connection refused by endpoint engine.");
+      addToast(err.message || "Connection refused by endpoint engine.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -129,6 +152,7 @@ export default function AdminMonitorsTab({
     if (!editingMonitor) return;
     if (!editName.trim() || !editUrl.trim()) {
       onError("Monitor name and endpoint URL are required.");
+      addToast("Monitor name and endpoint URL are required.", "error");
       return;
     }
 
@@ -146,16 +170,20 @@ export default function AdminMonitorsTab({
       });
 
       if (res.ok) {
-        onSuccess(`Monitor "${editName}" configuration successfully updated.`);
+        const msg = `Monitor "${editName}" configuration successfully updated.`;
+        onSuccess(msg);
+        addToast(msg, "success");
         setEditingMonitor(null);
         fetchAllMonitors();
       } else {
         const errData = await res.json();
         onError(errData.error || "Failed to update monitor settings.");
+        addToast(errData.error || "Failed to update monitor settings.", "error");
       }
     } catch (err: any) {
       console.error(err);
       onError(err.message || "An error occurred while saving.");
+      addToast(err.message || "An error occurred while saving.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -174,23 +202,135 @@ export default function AdminMonitorsTab({
     try {
       const res = await apiFetch(`/api/monitors/${id}`, { method: "DELETE" });
       if (res.ok) {
-        onSuccess(`Successfully deleted monitor "${deleteConfirmName}".`);
+        const msg = `Successfully deleted monitor "${deleteConfirmName}".`;
+        onSuccess(msg);
+        addToast(msg, "success");
+        setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
         fetchAllMonitors();
       } else {
         const errData = await res.json();
         onError(errData.error || "Failed to delete monitor.");
+        addToast(errData.error || "Failed to delete monitor.", "error");
       }
     } catch (err: any) {
       console.error(err);
       onError(err.message || "An error occurred while deleting the monitor.");
+      addToast(err.message || "An error occurred while deleting the monitor.", "error");
     } finally {
       setActionLoading(null);
       setDeleteConfirmId(null);
     }
   };
 
+  // Handle bulk actions (Delete, Pause, Resume)
+  const handleBulkAction = async (action: "delete" | "pause" | "resume") => {
+    if (selectedIds.length === 0) return;
+    
+    if (action === "delete") {
+      setShowBulkDeleteConfirm(true);
+      return;
+    }
+
+    setIsBulkActionLoading(true);
+    try {
+      const endpoint = "/api/admin/monitors/bulk-pause";
+      const body = { ids: selectedIds, action };
+
+      const res = await apiFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const msg = data.message || `Bulk operation completed on ${selectedIds.length} monitors.`;
+        onSuccess(msg);
+        addToast(msg, "success");
+        fetchAllMonitors();
+      } else {
+        const errData = await res.json();
+        onError(errData.error || "Bulk action execution failed.");
+        addToast(errData.error || "Bulk action execution failed.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      onError(err.message || "An error occurred during bulk operation.");
+      addToast(err.message || "An error occurred during bulk operation.", "error");
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  };
+
+  // Perform actual Bulk Delete Action
+  const performBulkDelete = async () => {
+    setIsBulkActionLoading(true);
+    setShowBulkDeleteConfirm(false);
+    try {
+      const res = await apiFetch("/api/admin/monitors/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const msg = data.message || `Successfully bulk deleted ${selectedIds.length} monitors.`;
+        onSuccess(msg);
+        addToast(msg, "success");
+        setSelectedIds([]);
+        fetchAllMonitors();
+      } else {
+        const errData = await res.json();
+        onError(errData.error || "Bulk delete execution failed.");
+        addToast(errData.error || "Bulk delete execution failed.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      onError(err.message || "An error occurred during bulk delete.");
+      addToast(err.message || "An error occurred during bulk delete.", "error");
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-4 animate-fade-in" id="admin-monitors-tab">
+    <div className="space-y-4 animate-fade-in relative" id="admin-monitors-tab">
+      
+      {/* Toast Notification Container with elegant slide-in animations */}
+      <div className="fixed top-4 right-4 z-[9999] space-y-2 pointer-events-none max-w-sm w-full" id="toast-notifications-container">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-xl border animate-in slide-in-from-right duration-300 ${
+              t.type === "success"
+                ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                : t.type === "error"
+                ? "bg-rose-50 border-rose-100 text-rose-800"
+                : "bg-blue-50 border-blue-100 text-blue-800"
+            }`}
+            id={`toast-${t.id}`}
+          >
+            {t.type === "success" ? (
+              <Check className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 animate-bounce" />
+            ) : t.type === "error" ? (
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            ) : (
+              <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <p className="text-xs font-black font-sans leading-relaxed">{t.message}</p>
+            </div>
+            <button
+              onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+              className="text-slate-400 hover:text-slate-600 rounded-lg p-0.5 transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="bg-white border border-slate-100 rounded-2xl p-4 md:p-5 shadow-xs space-y-4">
         {/* Tab Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
@@ -219,7 +359,7 @@ export default function AdminMonitorsTab({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by monitor name, target endpoint, subscriber, or user email..."
+              placeholder="Search by monitor name, target endpoint URL, or owner email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 font-bold transition-all"
@@ -235,6 +375,7 @@ export default function AdminMonitorsTab({
               <option value="ALL">All Statuses</option>
               <option value="up">Active / Up Only</option>
               <option value="down">Offline / Down Only</option>
+              <option value="paused">Paused Only</option>
               <option value="pending">Pending Configuration Only</option>
             </select>
           </div>
@@ -252,6 +393,58 @@ export default function AdminMonitorsTab({
             </select>
           </div>
         </div>
+
+        {/* Bulk Action Bar - Shows only when items are selected */}
+        {selectedIds.length > 0 && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in" id="admin-bulk-actions-bar">
+            <div className="flex items-center gap-2 text-indigo-950 font-bold text-xs">
+              <span className="bg-indigo-600 text-white font-black px-2 py-0.5 rounded-md text-[10px]">
+                {selectedIds.length}
+              </span>
+              <span>monitors selected for bulk operation</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                disabled={isBulkActionLoading}
+                onClick={() => handleBulkAction("pause")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-extrabold text-xs rounded-lg transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Temporarily pause check routines for selected targets"
+              >
+                <Pause className="w-3.5 h-3.5 text-slate-500" />
+                Mass Pause
+              </button>
+              
+              <button
+                disabled={isBulkActionLoading}
+                onClick={() => handleBulkAction("resume")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-indigo-600 font-extrabold text-xs rounded-lg transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Resume scheduled pings for selected targets"
+              >
+                <Play className="w-3.5 h-3.5 text-indigo-600 fill-indigo-600/10" />
+                Mass Resume
+              </button>
+
+              <button
+                disabled={isBulkActionLoading}
+                onClick={() => handleBulkAction("delete")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-lg transition-all cursor-pointer shadow-md disabled:opacity-50"
+                title="Permanently remove selected monitor profiles"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Mass Delete
+              </button>
+
+              <button
+                disabled={isBulkActionLoading}
+                onClick={() => setSelectedIds([])}
+                className="px-2.5 py-1.5 text-slate-400 hover:text-slate-600 font-extrabold text-xs rounded-lg transition-all cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Monitors Listing Table */}
         <div className="border border-slate-100 rounded-xl overflow-hidden">
@@ -271,6 +464,21 @@ export default function AdminMonitorsTab({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="p-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredMonitors.length > 0 && selectedIds.length === filteredMonitors.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(filteredMonitors.map((m) => m.id));
+                          } else {
+                            setSelectedIds([]);
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        title="Select All Monitors"
+                      />
+                    </th>
                     <th className="p-3 text-xs font-black text-slate-500">Monitor Identifier & Target</th>
                     <th className="p-3 text-xs font-black text-slate-500">Protocol</th>
                     <th className="p-3 text-xs font-black text-slate-500">Current Status</th>
@@ -283,15 +491,43 @@ export default function AdminMonitorsTab({
                   {filteredMonitors.map((m) => {
                     const isStatusUp = m.status === "up";
                     const isStatusDown = m.status === "down";
+                    const isStatusPaused = m.status === "paused";
                     const isChecking = actionLoading === `check-${m.id}`;
                     const isDeleting = actionLoading === `delete-${m.id}`;
 
                     return (
-                      <tr key={m.id} className="hover:bg-slate-50/50 transition-all group">
+                      <tr key={m.id} className={`hover:bg-slate-50/50 transition-all group ${selectedIds.includes(m.id) ? "bg-indigo-50/20" : ""}`}>
+                        {/* Checkbox for Selection */}
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(m.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedIds((prev) => [...prev, m.id]);
+                              } else {
+                                setSelectedIds((prev) => prev.filter((id) => id !== m.id));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                        </td>
+
                         {/* Name & Target URL */}
                         <td className="p-3 max-w-xs">
-                          <div className="text-xs font-black text-slate-900 truncate">
-                            {m.name}
+                          <div className="flex items-center gap-1.5">
+                            {isStatusUp ? (
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs animate-pulse" title="Online" />
+                            ) : isStatusDown ? (
+                              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-xs" title="Offline" />
+                            ) : isStatusPaused ? (
+                              <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0 shadow-xs" title="Paused" />
+                            ) : (
+                              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 shadow-xs" title="Pending" />
+                            )}
+                            <div className="text-xs font-black text-slate-900 truncate">
+                              {m.name}
+                            </div>
                           </div>
                           <div className="text-[10px] text-slate-400 truncate font-mono mt-0.5 flex items-center gap-1 font-bold">
                             <span className="opacity-80">{m.url}</span>
@@ -315,17 +551,22 @@ export default function AdminMonitorsTab({
                         {/* Current Status */}
                         <td className="p-3">
                           {isStatusUp ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-2xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               ONLINE
                             </div>
                           ) : isStatusDown ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-100">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-100 shadow-2xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                               DOWN
                             </div>
+                          ) : isStatusPaused ? (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200 shadow-2xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-450" />
+                              PAUSED
+                            </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100 shadow-2xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                               PENDING
                             </div>
@@ -548,6 +789,39 @@ export default function AdminMonitorsTab({
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
               >
                 Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in" id="admin-bulk-delete-confirmation-modal">
+          <div className="bg-white border border-slate-150 rounded-2xl w-full max-w-md overflow-hidden shadow-xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 bg-rose-50 rounded-xl">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="font-black text-slate-900 text-sm">Bulk Delete {selectedIds.length} Monitors?</h3>
+            </div>
+            <p className="text-xs text-slate-500 font-bold">
+              Are you absolutely sure you want to permanently delete the <span className="text-slate-850 font-black">{selectedIds.length} selected monitors</span>? This action is permanent and all telemetry log history for these targets will be permanently destroyed.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-xs text-slate-700 font-bold rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={performBulkDelete}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+              >
+                Confirm Bulk Delete
               </button>
             </div>
           </div>

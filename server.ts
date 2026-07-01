@@ -1765,6 +1765,79 @@ async function startServer() {
     }
   });
 
+  // Admin bulk delete monitors
+  app.post("/api/admin/monitors/bulk-delete", (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ error: "Monitor IDs array is required and must not be empty." });
+        return;
+      }
+
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user || user.id !== "user-admin") {
+        res.status(403).json({ error: "Forbidden. Admin access required." });
+        return;
+      }
+
+      const beforeCount = db.monitors.length;
+      db.monitors = db.monitors.filter((m: any) => !ids.includes(m.id));
+      
+      // Also optionally clean up logs of these deleted monitors to prevent stale records
+      db.logs = db.logs.filter((l: any) => !ids.includes(l.monitor_id));
+
+      writeDb(db);
+      const deletedCount = beforeCount - db.monitors.length;
+      
+      addSystemLog("info", `Admin bulk deleted ${deletedCount} monitors.`);
+      res.json({ success: true, message: `Successfully deleted ${deletedCount} monitors.` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin bulk pause / resume monitors
+  app.post("/api/admin/monitors/bulk-pause", (req, res) => {
+    try {
+      const { ids, action } = req.body; // action: "pause" | "resume"
+      if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ error: "Monitor IDs array is required and must not be empty." });
+        return;
+      }
+      if (action !== "pause" && action !== "resume") {
+        res.status(400).json({ error: "Action must be 'pause' or 'resume'." });
+        return;
+      }
+
+      const db = readDb();
+      const user = getActiveUser(req, db);
+      if (!user || user.id !== "user-admin") {
+        res.status(403).json({ error: "Forbidden. Admin access required." });
+        return;
+      }
+
+      let updatedCount = 0;
+      db.monitors = db.monitors.map((m: any) => {
+        if (ids.includes(m.id)) {
+          updatedCount++;
+          return {
+            ...m,
+            status: action === "pause" ? "paused" : "pending"
+          };
+        }
+        return m;
+      });
+
+      writeDb(db);
+      
+      addSystemLog("info", `Admin bulk ${action}d ${updatedCount} monitors.`);
+      res.json({ success: true, message: `Successfully ${action}d ${updatedCount} monitors.` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Admin global statistics endpoint
   app.get("/api/admin/stats", (req, res) => {
     try {

@@ -264,6 +264,7 @@ async function runEngineTick() {
     }
 
     const dueMonitors = monitors.filter((monitor) => {
+      if (monitor.status === "paused") return false;
       const lastCheckTime = monitor.last_check ? new Date(monitor.last_check).getTime() : 0;
       const intervalMs = monitor.interval_sec * 1000;
       return now - lastCheckTime >= intervalMs;
